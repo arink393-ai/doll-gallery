@@ -29,8 +29,9 @@ export async function genCheckMacValue(
   hashKey: string,
   hashIV: string,
 ): Promise<string> {
+  // 排除 CheckMacValue，其餘全部納入（含空字串值）——與綠界一致；勿過濾空值。
   const keys = Object.keys(params)
-    .filter((k) => k !== "CheckMacValue" && params[k] !== undefined && params[k] !== "")
+    .filter((k) => k !== "CheckMacValue" && params[k] !== undefined && params[k] !== null)
     .sort((a, b) => (a.toLowerCase() < b.toLowerCase() ? -1 : a.toLowerCase() > b.toLowerCase() ? 1 : 0));
   const query = keys.map((k) => `${k}=${params[k]}`).join("&");
   const raw = `HashKey=${hashKey}&${query}&HashIV=${hashIV}`;
