@@ -1,0 +1,7 @@
+project_id = "qsztcfntdwoqijhrhnoe"
+
+[functions.ecpay-checkout]
+verify_jwt = true
+
+[functions.ecpay-notify]
+verify_jwt = false

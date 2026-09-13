@@ -286,14 +286,59 @@ function openDetail(id) {
       <button class="btn btn-ghost" data-close>關閉</button>
       <button class="btn btn-green" id="buyNow">立即購買</button>
     </div>
-    <p class="hint" style="margin-top:12px;font-size:.78rem">※ 金流尚未串接：此處僅顯示費用明細，實際付款需完成台灣金流商註冊後啟用。</p>`;
+    <p class="hint" style="margin-top:12px;font-size:.78rem">※ 目前為綠界「測試環境」：可用測試卡走完整付款流程，不會產生真實款項。換上正式金鑰後即為真實收款。</p>`;
   openModal('detailModal');
   $('#detailModal [data-close]').onclick = () => closeModal($('#detailModal'));
   $('#buyNow').onclick = () => requireLogin(() => {
     if (SESSION.user.id === p.sellerId) { toast('這是你自己刊登的商品'); return; }
-    closeModal($('#detailModal'));
-    toast(`已建立訂單（金流待接）：${p.title}`);
+    startCheckout(p);
   });
+}
+
+/* 呼叫綠界結帳 Edge Function，取得付款參數後自動導向綠界 */
+async function startCheckout(p) {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { toast('請先登入'); return; }
+  const btn = $('#buyNow'); const label = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = '前往付款…'; }
+  try {
+    const resp = await fetch(`${CFG.SUPABASE_URL}/functions/v1/ecpay-checkout`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': CFG.SUPABASE_KEY,
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ product_id: p.id }),
+    });
+    const out = await resp.json();
+    if (!resp.ok || out.error) { toast(out.error || '結帳失敗'); if (btn) { btn.disabled = false; btn.textContent = label; } return; }
+    // 建立隱藏表單、自動 POST 導向綠界付款頁
+    const form = document.createElement('form');
+    form.method = 'POST'; form.action = out.action; form.style.display = 'none';
+    for (const k in out.params) {
+      const i = document.createElement('input'); i.type = 'hidden'; i.name = k; i.value = out.params[k]; form.appendChild(i);
+    }
+    document.body.appendChild(form); form.submit();
+  } catch (e) {
+    toast('結帳錯誤：' + e.message); if (btn) { btn.disabled = false; btn.textContent = label; }
+  }
+}
+
+/* 從綠界付款頁返回時，顯示結果 */
+async function checkPaidReturn() {
+  const mtn = new URLSearchParams(location.search).get('paid');
+  if (!mtn) return;
+  history.replaceState({}, '', location.pathname + location.hash);
+  let order = null;
+  for (let i = 0; i < 5; i++) {
+    const { data } = await sb.from('doll_orders').select('status,product_title').eq('merchant_trade_no', mtn).maybeSingle();
+    if (data) { order = data; if (data.status === 'paid') break; }
+    await new Promise(r => setTimeout(r, 1500));
+  }
+  if (order?.status === 'paid') toast(`付款成功！已購買「${order.product_title}」`);
+  else if (order) toast('付款處理中，稍後可在訂單查看狀態');
+  else toast('已從綠界返回');
 }
 
 /* ---------- 費用試算區 ---------- */
@@ -336,4 +381,5 @@ sb.auth.onAuthStateChange((_e, session) => { SESSION = session; renderAccount();
   await loadProducts();
   renderZones();
   renderMarket();
+  checkPaidReturn();
 })();
