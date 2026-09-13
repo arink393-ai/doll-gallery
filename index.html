@@ -164,6 +164,28 @@
   .fee-mini .r{display:flex;justify-content:space-between;padding:5px 0}
   .fee-mini .r.total{border-top:1px solid var(--line);margin-top:4px;padding-top:9px;font-weight:700}
 
+  /* Account (我的) */
+  .tabs{display:flex;gap:4px;margin:6px 0 18px;border-bottom:1px solid var(--line)}
+  .tab{background:none;border:0;padding:10px 14px;font-size:.92rem;font-weight:700;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+  .tab.active{color:var(--ink);border-bottom-color:var(--ink)}
+  .acct-list{display:flex;flex-direction:column;gap:12px;max-height:56vh;overflow:auto}
+  .acct-row{display:flex;gap:13px;align-items:center;border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+  .acct-row .thumb{width:52px;height:52px;border-radius:10px;flex:none;display:flex;align-items:center;justify-content:center;font-size:1.6rem;background:var(--bjd-soft);background-size:cover;background-position:center}
+  .acct-row .info{flex:1;min-width:0}
+  .acct-row .info h4{margin:0 0 3px;font-size:1rem;font-family:var(--serif)}
+  .acct-row .info .sub{color:var(--muted);font-size:.82rem}
+  .acct-row .acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;align-items:center}
+  .pill{font-size:.72rem;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap}
+  .pill.paid{background:#e6f6ee;color:var(--green)}
+  .pill.pending{background:#fdf1dc;color:#b7791f}
+  .pill.failed{background:#fde8e8;color:#c0392b}
+  .pill.off{background:#efeae6;color:#8a7570}
+  .pill.on{background:var(--bjd-soft);color:var(--bjd)}
+  .mini-btn{font-size:.8rem;font-weight:700;border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 10px;cursor:pointer;color:var(--ink)}
+  .mini-btn:hover{background:var(--bg)}
+  .mini-btn.danger{color:#c0392b;border-color:#f0c9c4}
+  .acct-empty{color:var(--muted);text-align:center;padding:34px 0}
+
   @media(max-width:860px){
     .map-grid{grid-template-columns:1fr}
     .grid{grid-template-columns:repeat(2,1fr)}
@@ -362,7 +384,7 @@
 <div class="modal-back" id="sellModal">
   <div class="modal wide">
     <button class="close" data-close>×</button>
-    <h3>刊登商品</h3>
+    <h3 id="sellTitle">刊登商品</h3>
     <p class="sub">填寫商品資訊並上傳照片。刊登免費，成交時才收取手續費與金流費。</p>
     <div class="field">
       <label>商品名稱</label>
@@ -396,6 +418,21 @@
       <button class="btn btn-ghost" data-close>取消</button>
       <button class="btn btn-bjd" id="sellSubmit">確認刊登（免費）</button>
     </div>
+  </div>
+</div>
+
+<!-- ACCOUNT (我的) MODAL -->
+<div class="modal-back" id="accountModal">
+  <div class="modal wide">
+    <button class="close" data-close>×</button>
+    <h3>我的帳號</h3>
+    <p class="sub" id="acctWho"></p>
+    <div class="tabs" id="acctTabs">
+      <button class="tab active" data-tab="listings">我的商品</button>
+      <button class="tab" data-tab="bought">我買的</button>
+      <button class="tab" data-tab="sold">我賣出的</button>
+    </div>
+    <div id="acctBody"></div>
   </div>
 </div>
 

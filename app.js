@@ -97,8 +97,10 @@ function renderAccount() {
   const el = $('#navAccount'); const u = SESSION?.user;
   if (u) {
     el.innerHTML = `<span class="who">👤 ${escapeHtml(userName(u))}</span>
+      <button class="link-btn" id="accMine">我的</button>
       <button class="btn btn-dark btn-sm" id="accSell">刊登</button>
       <button class="link-btn" id="accLogout">登出</button>`;
+    $('#accMine').onclick = openAccount;
     $('#accSell').onclick = openSell;
     $('#accLogout').onclick = async () => { await doLogout(); renderAccount(); toast('已登出'); };
   } else {
@@ -201,15 +203,32 @@ function requireLogin(action) {
 
 /* ---------- Sell / Upload Modal ---------- */
 let uploadedFile = null;   // 實際 File 物件（上傳 Storage 用）
+let editingId = null;      // 非 null = 編輯既有商品
 function openSell() {
   requireLogin(() => {
-    uploadedFile = null;
+    editingId = null; uploadedFile = null;
+    $('#sellTitle').textContent = '刊登商品';
+    $('#sellSubmit').textContent = '確認刊登（免費）';
     $('#pTitle').value=''; $('#pPrice').value=''; $('#pDesc').value='';
     $('#pCat').value='bjd'; $('#pPreview').innerHTML=''; $('#pDrop').classList.remove('has');
     $('#sellErr').textContent='';
     updateSellFeeHint();
     openModal('sellModal');
   });
+}
+function openEditProduct(id) {
+  const p = PRODUCTS.find(x => x.id === id); if (!p) return;
+  editingId = id; uploadedFile = null;
+  $('#sellTitle').textContent = '編輯商品';
+  $('#sellSubmit').textContent = '儲存變更';
+  $('#pTitle').value = p.title; $('#pPrice').value = p.price; $('#pDesc').value = p.desc || '';
+  $('#pCat').value = p.cat;
+  $('#pPreview').innerHTML = p.image ? `<img src="${escapeHtml(p.image)}" alt="預覽">` : '';
+  $('#pDrop').classList.toggle('has', !!p.image);
+  $('#sellErr').textContent='';
+  updateSellFeeHint();
+  closeModal($('#accountModal'));
+  openModal('sellModal');
 }
 $('#heroSell').onclick = openSell;
 $('#mktSell').onclick = openSell;
@@ -242,7 +261,7 @@ $('#sellSubmit').onclick = async () => {
   if (price <= 0) { err.textContent='請輸入有效售價。'; return; }
   const user = SESSION?.user;
   if (!user) { err.textContent='請先登入。'; return; }
-  const btn = $('#sellSubmit'); btn.disabled = true; const label = btn.textContent; btn.textContent = '上架中…';
+  const btn = $('#sellSubmit'); btn.disabled = true; const label = btn.textContent; btn.textContent = editingId ? '儲存中…' : '上架中…';
   try {
     let image_url = null;
     if (uploadedFile) {
@@ -252,15 +271,26 @@ $('#sellSubmit').onclick = async () => {
       if (upErr) throw new Error('圖片上傳失敗：' + upErr.message);
       image_url = sb.storage.from(CFG.BUCKET).getPublicUrl(path).data.publicUrl;
     }
-    const { error } = await sb.from(CFG.TABLE).insert({
-      seller_id: user.id, seller_name: userName(user),
-      cat, title, price, descr: desc, image_url, for_sale: true,
-    });
-    if (error) throw new Error('刊登失敗：' + error.message);
-    await loadProducts(); renderZones(); renderMarket();
-    closeModal($('#sellModal'));
-    toast('刊登成功！商品已上架商城');
-    document.getElementById('market').scrollIntoView({ behavior:'smooth' });
+    if (editingId) {
+      const patch = { cat, title, price, descr: desc };
+      if (image_url) patch.image_url = image_url;   // 沒換圖就保留原圖
+      const { error } = await sb.from(CFG.TABLE).update(patch).eq('id', editingId);
+      if (error) throw new Error('更新失敗：' + error.message);
+      await loadProducts(); renderZones(); renderMarket();
+      closeModal($('#sellModal'));
+      toast('已更新商品');
+      if ($('#accountModal').classList.contains('open')) renderAcct();
+    } else {
+      const { error } = await sb.from(CFG.TABLE).insert({
+        seller_id: user.id, seller_name: userName(user),
+        cat, title, price, descr: desc, image_url, for_sale: true,
+      });
+      if (error) throw new Error('刊登失敗：' + error.message);
+      await loadProducts(); renderZones(); renderMarket();
+      closeModal($('#sellModal'));
+      toast('刊登成功！商品已上架商城');
+      document.getElementById('market').scrollIntoView({ behavior:'smooth' });
+    }
   } catch (e) { err.textContent = e.message || String(e); }
   finally { btn.disabled = false; btn.textContent = label; }
 };
@@ -339,6 +369,96 @@ async function checkPaidReturn() {
   if (order?.status === 'paid') toast(`付款成功！已購買「${order.product_title}」`);
   else if (order) toast('付款處理中，稍後可在訂單查看狀態');
   else toast('已從綠界返回');
+}
+
+/* ---------- Account (我的) Modal ---------- */
+let acctTab = 'listings';
+function openAccount() {
+  requireLogin(() => {
+    acctTab = 'listings';
+    $$('#acctTabs .tab').forEach(t => t.classList.toggle('active', t.dataset.tab === acctTab));
+    $('#acctWho').textContent = `${userName(SESSION.user)}（${SESSION.user.email}）`;
+    $('#acctBody').innerHTML = '<div class="acct-empty">載入中…</div>';
+    openModal('accountModal');
+    renderAcct();
+  });
+}
+$('#acctTabs').addEventListener('click', e => {
+  const t = e.target.closest('.tab'); if (!t) return;
+  acctTab = t.dataset.tab;
+  $$('#acctTabs .tab').forEach(x => x.classList.toggle('active', x === t));
+  renderAcct();
+});
+
+const statusPill = s => ({ paid:'<span class="pill paid">已付款</span>', pending:'<span class="pill pending">待付款</span>', failed:'<span class="pill failed">未完成</span>' }[s] || '');
+const orderDate = o => new Date(o.created_at).toLocaleDateString('zh-TW');
+
+async function renderAcct() {
+  const body = $('#acctBody');
+  const uid = SESSION.user.id;
+  body.innerHTML = '<div class="acct-empty">載入中…</div>';
+
+  if (acctTab === 'listings') {
+    const { data, error } = await sb.from(CFG.TABLE).select('*').eq('seller_id', uid).order('created_at', { ascending: false });
+    if (error) { body.innerHTML = `<div class="acct-empty">讀取失敗：${escapeHtml(error.message)}</div>`; return; }
+    if (!data.length) { body.innerHTML = '<div class="acct-empty">你還沒有刊登任何商品。<br>點右上角「刊登」上架第一件吧！</div>'; return; }
+    body.innerHTML = `<div class="acct-list">${data.map(r => {
+      const p = normalize(r);
+      const thumb = p.image ? `style="background-image:url('${escapeHtml(p.image)}')"` : '';
+      return `<div class="acct-row">
+        <div class="thumb" ${thumb}>${p.image ? '' : p.emoji}</div>
+        <div class="info">
+          <h4>${escapeHtml(p.title)}</h4>
+          <div class="sub">${escapeHtml(CAT_NAME[p.cat])} · ${money(p.price)} · ${r.for_sale ? '<span class="pill on">販售中</span>' : '<span class="pill off">已下架</span>'}</div>
+        </div>
+        <div class="acts">
+          <button class="mini-btn" data-edit="${p.id}">編輯</button>
+          <button class="mini-btn" data-toggle="${p.id}" data-cur="${r.for_sale}">${r.for_sale ? '下架' : '重新上架'}</button>
+          <button class="mini-btn danger" data-del="${p.id}">刪除</button>
+        </div>
+      </div>`;
+    }).join('')}</div>`;
+    body.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => openEditProduct(b.dataset.edit));
+    body.querySelectorAll('[data-toggle]').forEach(b => b.onclick = () => toggleForSale(b.dataset.toggle, b.dataset.cur === 'true'));
+    body.querySelectorAll('[data-del]').forEach(b => b.onclick = () => deleteProduct(b.dataset.del));
+    return;
+  }
+
+  // bought / sold → doll_orders
+  const col = acctTab === 'bought' ? 'buyer_id' : 'seller_id';
+  const { data, error } = await sb.from('doll_orders').select('*').eq(col, uid).order('created_at', { ascending: false });
+  if (error) { body.innerHTML = `<div class="acct-empty">讀取失敗：${escapeHtml(error.message)}</div>`; return; }
+  if (!data.length) {
+    body.innerHTML = `<div class="acct-empty">${acctTab === 'bought' ? '你還沒有購買紀錄。' : '你還沒有賣出任何商品。'}</div>`; return;
+  }
+  body.innerHTML = `<div class="acct-list">${data.map(o => {
+    const line = acctTab === 'bought'
+      ? `付款 ${money(o.amount)} · ${orderDate(o)}`
+      : `買家 ${escapeHtml(o.buyer_email || '—')} · 實收 <b>${money(o.seller_payout)}</b> · ${orderDate(o)}`;
+    return `<div class="acct-row">
+      <div class="thumb">${acctTab === 'bought' ? '🛍️' : '📦'}</div>
+      <div class="info">
+        <h4>${escapeHtml(o.product_title)}</h4>
+        <div class="sub">${line}</div>
+      </div>
+      <div class="acts">${statusPill(o.status)}</div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+async function toggleForSale(id, cur) {
+  const { error } = await sb.from(CFG.TABLE).update({ for_sale: !cur }).eq('id', id);
+  if (error) { toast('操作失敗：' + error.message); return; }
+  await loadProducts(); renderZones(); renderMarket(); renderAcct();
+  toast(cur ? '已下架' : '已重新上架');
+}
+async function deleteProduct(id) {
+  const p = PRODUCTS.find(x => x.id === id);
+  if (!window.confirm(`確定要刪除「${p ? p.title : '這件商品'}」嗎？此動作無法復原。`)) return;
+  const { error } = await sb.from(CFG.TABLE).delete().eq('id', id);
+  if (error) { toast('刪除失敗：' + error.message); return; }
+  await loadProducts(); renderZones(); renderMarket(); renderAcct();
+  toast('已刪除商品');
 }
 
 /* ---------- 費用試算區 ---------- */
