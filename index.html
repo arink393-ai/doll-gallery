@@ -324,7 +324,7 @@
   <div class="wrap">
     <div class="brand"><span class="dot" style="color:var(--barbie)">●</span> 娃娃收藏館</div>
     <div>© 2026 Doll Gallery &amp; Marketplace · 個人娃娃收藏與交易平台</div>
-    <div class="notice">目前為<b>展示版</b>：會員與商品資料暫存在你的瀏覽器本機，尚未串接真正的後端與金流。串接 Supabase（會員/資料）與台灣金流（綠界／藍新／LINE Pay）後即可正式收款。</div>
+    <div class="notice">會員與商品已串接 <b>Supabase</b> 雲端（真實註冊登入、跨裝置共用）。金流（綠界／藍新／LINE Pay）尚未串接，結帳目前僅顯示費用明細，實際收款需完成金流商註冊後啟用。</div>
   </div>
 </footer>
 
@@ -409,6 +409,8 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

@@ -1,50 +1,26 @@
 /* ==========================================================================
-   娃娃收藏館 · Marketplace 前端邏輯（展示版）
-   資料層目前用 localStorage，設計成可抽換 —— 之後把 Store 換成 Supabase 即可。
-   金流：目前只做「費用試算 + 結帳明細」，實際收款需串接台灣金流商後啟用。
+   娃娃收藏館 · Marketplace 前端邏輯（Supabase 版）
+   - 會員：Supabase Auth（email/password）
+   - 商品：doll_products 資料表（RLS 保護）
+   - 圖片：Storage bucket doll-product-images（公開讀、登入寫）
+   金流：目前只做「費用試算 + 結帳明細」，實際收款待串接台灣金流商後啟用。
    ========================================================================== */
 
 /* ---------- 費率設定（預設值，之後可調） ---------- */
 const FEES = {
-  listing: 0,          // 刊登費：免費
+  listing: 0,           // 刊登費：免費
   commissionRate: 0.05, // 成交手續費 5%
   paymentRate: 0.025,   // 金流費率 2.5%
   paymentFixed: 5,      // 金流固定費 NT$5
 };
 
-/* ---------- 資料層（可抽換：改成 Supabase 時只需換這一層） ---------- */
-const Store = {
-  _get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } },
-  _set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
-  users()      { return this._get('dg_users', []); },
-  saveUsers(u) { this._set('dg_users', u); },
-  products()   { return this._get('dg_products', null) || seedProducts(); },
-  saveProducts(p){ this._set('dg_products', p); },
-  session()    { return this._get('dg_session', null); },
-  setSession(id){ id ? this._set('dg_session', id) : localStorage.removeItem('dg_session'); },
-};
+/* ---------- Supabase 連線 ---------- */
+const CFG = window.DG_CONFIG;
+const sb = window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_KEY);
 
-/* ---------- 種子資料（展示用；館藏標為非賣，商城有可買商品） ---------- */
-function seedProducts() {
-  const seed = [
-    // 芭比 館藏（展示，非賣）
-    { id:'s1', cat:'barbie', title:'復刻經典芭比', meta:'1959 復刻 · 條紋泳裝', desc:'向初代芭比致敬的復刻款，黑白條紋泳裝與招牌馬尾。', tag:'經典系列', emoji:'💃', price:0, forSale:false, sellerName:'館藏' },
-    { id:'s2', cat:'barbie', title:'晚宴禮服芭比', meta:'Collector · 亮片長裙', desc:'華麗亮片禮服搭配長手套，收藏家系列的代表造型。', tag:'禮服系列', emoji:'👛', price:2800, forSale:true, sellerName:'Eugenie' },
-    { id:'s3', cat:'barbie', title:'聯名限量芭比', meta:'Limited · 限量編號', desc:'品牌聯名的限量款式，附收藏證與專屬包裝。', tag:'聯名款', emoji:'🎀', price:4500, forSale:true, sellerName:'Eugenie' },
-    // 小布 館藏
-    { id:'s4', cat:'blythe', title:'原裝小布', meta:'Neo Blythe · 原廠妝', desc:'保留原廠妝容與眼片的原裝小布，變色拉繩完好。', tag:'原裝款', emoji:'🧸', price:0, forSale:false, sellerName:'館藏' },
-    { id:'s5', cat:'blythe', title:'訂製改娃小布', meta:'Custom · 手繪妝', desc:'手繪重妝與植髮的訂製款，五官更柔和、獨一無二。', tag:'改娃款', emoji:'🌸', price:6800, forSale:true, sellerName:'Momo' },
-    { id:'s6', cat:'blythe', title:'Petite 迷你小布', meta:'Petite · 掌心尺寸', desc:'掌心大小的迷你版本，適合擺飾與外出拍照。', tag:'迷你款', emoji:'☕', price:1200, forSale:true, sellerName:'Momo' },
-    // BJD 專區（新）
-    { id:'s7', cat:'bjd', title:'1/3 SD 訂製娃', meta:'1/3 · 全套妝體', desc:'1/3 尺寸球型關節娃，含頭雕、素體、開眉眼與訂製妝容。', tag:'1/3 SD', emoji:'🎎', price:12800, forSale:true, sellerName:'Rin' },
-    { id:'s8', cat:'bjd', title:'1/4 MSD 少女頭', meta:'1/4 · 單頭', desc:'MSD 尺寸單頭雕，樹脂膚色接近粉膚，附原廠證卡。', tag:'1/4 MSD', emoji:'👤', price:5600, forSale:true, sellerName:'Rin' },
-    { id:'s9', cat:'bjd', title:'1/6 YOSD 全套', meta:'1/6 · 素體+服裝', desc:'YOSD 小尺寸，附素體、假髮、眼珠與一套服裝，新手友善。', tag:'1/6 YOSD', emoji:'🧚', price:3900, forSale:true, sellerName:'Sora' },
-    // 配件
-    { id:'s10', cat:'accessory', title:'手作娃用洋裝（3件組）', meta:'配件 · 適用 1/6', desc:'手工縫製洋裝三件組，適用小布與 1/6 BJD。', tag:'服裝', emoji:'👗', price:850, forSale:true, sellerName:'Sora' },
-  ];
-  Store.saveProducts(seed);
-  return seed;
-}
+/* ---------- 執行期狀態 ---------- */
+let SESSION = null;   // 目前登入 session
+let PRODUCTS = [];    // 從資料庫載入的商品（已正規化）
 
 /* ---------- 小工具 ---------- */
 const $ = (s, r=document) => r.querySelector(s);
@@ -52,6 +28,9 @@ const $$ = (s, r=document) => [...r.querySelectorAll(s)];
 const money = n => 'NT$' + Math.round(n).toLocaleString('en-US');
 const CAT_CLASS = { barbie:'pink', blythe:'blue', bjd:'bjd', accessory:'bjd' };
 const CAT_NAME  = { barbie:'芭比', blythe:'小布', bjd:'BJD', accessory:'配件/服裝' };
+const CAT_EMOJI = { barbie:'👗', blythe:'🌸', bjd:'🎎', accessory:'👜' };
+function escapeHtml(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function userName(u){ return u?.user_metadata?.name || (u?.email ? u.email.split('@')[0] : '會員'); }
 
 function feeBreakdown(price) {
   const commission = price * FEES.commissionRate;
@@ -59,42 +38,69 @@ function feeBreakdown(price) {
   const payout = price - commission - payment;
   return { price, commission, payment, payout };
 }
-
 function toast(msg) {
   const t = $('#toast'); t.textContent = msg; t.classList.add('show');
-  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 2200);
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+/* 把資料庫列正規化成畫面用的物件 */
+function normalize(row) {
+  return {
+    id: row.id, cat: row.cat, title: row.title, price: row.price,
+    desc: row.descr, image: row.image_url, forSale: row.for_sale,
+    sellerId: row.seller_id, sellerName: row.seller_name,
+    tag: CAT_NAME[row.cat] || row.cat,
+    emoji: CAT_EMOJI[row.cat] || '🎎',
+    meta: (row.for_sale ? CAT_NAME[row.cat] + ' · 會員刊登' : CAT_NAME[row.cat] + ' · 館藏展示'),
+  };
+}
+
+/* ---------- 資料載入 ---------- */
+async function loadProducts() {
+  const { data, error } = await sb.from(CFG.TABLE).select('*').order('created_at', { ascending: false });
+  if (error) {
+    console.error('loadProducts', error);
+    toast('讀取商品失敗：' + error.message);
+    PRODUCTS = []; return;
+  }
+  PRODUCTS = data.map(normalize);
+}
+async function refreshSession() {
+  const { data } = await sb.auth.getSession();
+  SESSION = data.session;
 }
 
 /* ---------- Auth ---------- */
-const Auth = {
-  current() {
-    const id = Store.session();
-    return id ? Store.users().find(u => u.id === id) || null : null;
-  },
-  register(name, email, pass) {
-    const users = Store.users();
-    if (users.some(u => u.email === email)) throw new Error('這個 Email 已經註冊過了。');
-    const user = { id: 'u' + Date.now(), name: name || email.split('@')[0], email, pass };
-    users.push(user); Store.saveUsers(users); Store.setSession(user.id);
-    return user;
-  },
-  login(email, pass) {
-    const user = Store.users().find(u => u.email === email);
-    if (!user || user.pass !== pass) throw new Error('Email 或密碼錯誤。');
-    Store.setSession(user.id); return user;
-  },
-  logout() { Store.setSession(null); },
-};
+async function doRegister(name, email, pass) {
+  const { data, error } = await sb.auth.signUp({
+    email, password: pass, options: { data: { name: name || email.split('@')[0] } },
+  });
+  if (error) throw error;
+  if (!data.session) {
+    // Email 驗證未關閉的情況
+    throw new Error('註冊成功，但這個專案還開著「Email 驗證」。請到 Supabase → Authentication → Email 關閉 Confirm email，或收信完成驗證後再登入。');
+  }
+  SESSION = data.session;
+}
+async function doLogin(email, pass) {
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+  if (error) {
+    if (/confirm/i.test(error.message)) throw new Error('這個帳號尚未完成 Email 驗證。可到 Supabase 關閉 Confirm email，或收信驗證後再登入。');
+    throw new Error('Email 或密碼錯誤。');
+  }
+  SESSION = data.session;
+}
+async function doLogout() { await sb.auth.signOut(); SESSION = null; }
 
 /* ---------- 渲染：導覽列帳號區 ---------- */
 function renderAccount() {
-  const el = $('#navAccount'); const u = Auth.current();
+  const el = $('#navAccount'); const u = SESSION?.user;
   if (u) {
-    el.innerHTML = `<span class="who">👤 ${escapeHtml(u.name)}</span>
+    el.innerHTML = `<span class="who">👤 ${escapeHtml(userName(u))}</span>
       <button class="btn btn-dark btn-sm" id="accSell">刊登</button>
       <button class="link-btn" id="accLogout">登出</button>`;
     $('#accSell').onclick = openSell;
-    $('#accLogout').onclick = () => { Auth.logout(); renderAccount(); toast('已登出'); };
+    $('#accLogout').onclick = async () => { await doLogout(); renderAccount(); toast('已登出'); };
   } else {
     el.innerHTML = `<button class="link-btn" id="accLogin">登入</button>
       <button class="btn btn-dark btn-sm" id="accReg">註冊</button>`;
@@ -102,23 +108,22 @@ function renderAccount() {
     $('#accReg').onclick = () => openAuth('register');
   }
 }
-function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
-/* ---------- 渲染：專區卡片 ---------- */
+/* ---------- 渲染：卡片 ---------- */
 function cardHtml(p) {
   const cls = CAT_CLASS[p.cat] || 'bjd';
-  const bg = p.image ? `style="background-image:url('${p.image}')"` : '';
+  const bg = p.image ? `style="background-image:url('${escapeHtml(p.image)}')"` : '';
   const priceTag = p.forSale ? `<span class="price-tag">${money(p.price)}</span>` : '';
   const emoji = p.image ? '' : (p.emoji || '🎎');
   const action = p.forSale
     ? `<button class="btn btn-dark btn-sm" data-buy="${p.id}">查看 / 購買</button>`
     : `<span class="seller">館藏展示</span>`;
   return `<article class="doll ${cls}">
-    <div class="photo" ${bg}>${emoji}<span class="tag">${escapeHtml(p.tag || CAT_NAME[p.cat])}</span>${priceTag}</div>
+    <div class="photo" ${bg}>${emoji}<span class="tag">${escapeHtml(p.tag)}</span>${priceTag}</div>
     <div class="body">
       <h4>${escapeHtml(p.title)}</h4>
-      <p class="meta">${escapeHtml(p.meta || '')}</p>
-      <p class="desc">${escapeHtml(p.desc || '')}</p>
+      <p class="meta">${escapeHtml(p.meta)}</p>
+      <p class="desc">${escapeHtml(p.desc)}</p>
       <div class="row">
         <span class="seller">賣家：${escapeHtml(p.sellerName || '—')}</span>
         ${action}
@@ -126,27 +131,23 @@ function cardHtml(p) {
     </div>
   </article>`;
 }
-
 function renderZones() {
-  const all = Store.products();
   ['barbie','blythe','bjd'].forEach(cat => {
     const grid = $('#grid-' + cat);
-    grid.innerHTML = all.filter(p => p.cat === cat).map(cardHtml).join('');
+    grid.innerHTML = PRODUCTS.filter(p => p.cat === cat).map(cardHtml).join('')
+      || `<p class="seller" style="grid-column:1/-1;color:var(--muted)">這個專區還沒有娃娃，快來刊登第一隻！</p>`;
   });
   bindBuyButtons();
 }
-
 let currentCat = 'all';
 function renderMarket() {
-  const all = Store.products().filter(p => p.forSale);
+  const all = PRODUCTS.filter(p => p.forSale);
   const list = currentCat === 'all' ? all : all.filter(p => p.cat === currentCat);
-  const grid = $('#grid-market'), empty = $('#mktEmpty');
-  grid.innerHTML = list.map(cardHtml).join('');
-  empty.hidden = list.length > 0;
+  $('#grid-market').innerHTML = list.map(cardHtml).join('');
+  $('#mktEmpty').hidden = list.length > 0;
   $('#statItems').textContent = all.length;
   bindBuyButtons();
 }
-
 function bindBuyButtons() {
   $$('[data-buy]').forEach(b => b.onclick = () => openDetail(b.dataset.buy));
 }
@@ -173,52 +174,53 @@ function openAuth(mode) {
   openModal('authModal');
 }
 $('#authSwitch').onclick = () => openAuth(authMode === 'login' ? 'register' : 'login');
-$('#authSubmit').onclick = () => {
+$('#authSubmit').onclick = async () => {
   const name = $('#authName').value.trim();
   const email = $('#authEmail').value.trim();
   const pass = $('#authPass').value;
   const err = $('#authErr'); err.textContent = '';
   if (!email || !pass) { err.textContent = '請輸入 Email 與密碼。'; return; }
   if (pass.length < 6) { err.textContent = '密碼至少 6 碼。'; return; }
+  const btn = $('#authSubmit'); btn.disabled = true; const label = btn.textContent; btn.textContent = '處理中…';
   try {
-    if (authMode === 'register') Auth.register(name, email, pass);
-    else Auth.login(email, pass);
+    if (authMode === 'register') await doRegister(name, email, pass);
+    else await doLogin(email, pass);
     closeModal($('#authModal')); renderAccount();
     toast(authMode === 'register' ? '註冊成功，已登入' : '登入成功');
     if (pendingAction) { const a = pendingAction; pendingAction = null; a(); }
-  } catch (e) { err.textContent = e.message; }
+  } catch (e) { err.textContent = e.message || String(e); }
+  finally { btn.disabled = false; btn.textContent = label; }
 };
 
 /* 需要登入才能做的動作 */
 let pendingAction = null;
 function requireLogin(action) {
-  if (Auth.current()) { action(); }
+  if (SESSION?.user) { action(); }
   else { pendingAction = action; openAuth('login'); toast('請先登入或註冊'); }
 }
 
 /* ---------- Sell / Upload Modal ---------- */
-let uploadedImage = null;
+let uploadedFile = null;   // 實際 File 物件（上傳 Storage 用）
 function openSell() {
   requireLogin(() => {
-    uploadedImage = null;
+    uploadedFile = null;
     $('#pTitle').value=''; $('#pPrice').value=''; $('#pDesc').value='';
     $('#pCat').value='bjd'; $('#pPreview').innerHTML=''; $('#pDrop').classList.remove('has');
-    $('#pDrop').firstChild && ($('#sellErr').textContent='');
+    $('#sellErr').textContent='';
     updateSellFeeHint();
     openModal('sellModal');
   });
 }
 $('#heroSell').onclick = openSell;
 $('#mktSell').onclick = openSell;
-
 $('#pDrop').onclick = () => $('#pFile').click();
 $('#pFile').onchange = e => {
   const file = e.target.files[0]; if (!file) return;
   if (file.size > 2.5 * 1024 * 1024) { $('#sellErr').textContent = '圖片請小於 2.5MB。'; return; }
+  uploadedFile = file;
   const reader = new FileReader();
   reader.onload = () => {
-    uploadedImage = reader.result;
-    $('#pPreview').innerHTML = `<img src="${uploadedImage}" alt="預覽">`;
+    $('#pPreview').innerHTML = `<img src="${reader.result}" alt="預覽">`;
     $('#pDrop').classList.add('has'); $('#sellErr').textContent='';
   };
   reader.readAsDataURL(file);
@@ -230,7 +232,7 @@ function updateSellFeeHint() {
   const f = feeBreakdown(price);
   $('#pFeeHint').innerHTML = `成交後你實收約 <b>${money(f.payout)}</b>（已扣手續費 ${money(f.commission)} + 金流費 ${money(f.payment)}）`;
 }
-$('#sellSubmit').onclick = () => {
+$('#sellSubmit').onclick = async () => {
   const title = $('#pTitle').value.trim();
   const cat = $('#pCat').value;
   const price = +$('#pPrice').value || 0;
@@ -238,31 +240,41 @@ $('#sellSubmit').onclick = () => {
   const err = $('#sellErr'); err.textContent='';
   if (!title) { err.textContent='請輸入商品名稱。'; return; }
   if (price <= 0) { err.textContent='請輸入有效售價。'; return; }
-  const u = Auth.current();
-  const emojiByCat = { barbie:'👗', blythe:'🌸', bjd:'🎎', accessory:'👜' };
-  const p = {
-    id: 'p' + Date.now(), cat, title, price, desc,
-    meta: CAT_NAME[cat] + ' · 會員刊登', tag: CAT_NAME[cat],
-    emoji: emojiByCat[cat] || '🎎', image: uploadedImage,
-    forSale: true, sellerName: u.name, sellerId: u.id, createdAt: Date.now(),
-  };
-  const products = Store.products(); products.unshift(p); Store.saveProducts(products);
-  closeModal($('#sellModal')); renderZones(); renderMarket();
-  toast('刊登成功！商品已上架商城');
-  document.getElementById('market').scrollIntoView({ behavior:'smooth' });
+  const user = SESSION?.user;
+  if (!user) { err.textContent='請先登入。'; return; }
+  const btn = $('#sellSubmit'); btn.disabled = true; const label = btn.textContent; btn.textContent = '上架中…';
+  try {
+    let image_url = null;
+    if (uploadedFile) {
+      const ext = (uploadedFile.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g,'') || 'jpg';
+      const path = `${user.id}/${Date.now()}.${ext}`;
+      const { error: upErr } = await sb.storage.from(CFG.BUCKET).upload(path, uploadedFile, { cacheControl:'3600', upsert:false });
+      if (upErr) throw new Error('圖片上傳失敗：' + upErr.message);
+      image_url = sb.storage.from(CFG.BUCKET).getPublicUrl(path).data.publicUrl;
+    }
+    const { error } = await sb.from(CFG.TABLE).insert({
+      seller_id: user.id, seller_name: userName(user),
+      cat, title, price, descr: desc, image_url, for_sale: true,
+    });
+    if (error) throw new Error('刊登失敗：' + error.message);
+    await loadProducts(); renderZones(); renderMarket();
+    closeModal($('#sellModal'));
+    toast('刊登成功！商品已上架商城');
+    document.getElementById('market').scrollIntoView({ behavior:'smooth' });
+  } catch (e) { err.textContent = e.message || String(e); }
+  finally { btn.disabled = false; btn.textContent = label; }
 };
 
 /* ---------- Detail / Checkout Modal ---------- */
 function openDetail(id) {
-  const p = Store.products().find(x => x.id === id); if (!p) return;
+  const p = PRODUCTS.find(x => x.id === id); if (!p) return;
   const cls = CAT_CLASS[p.cat] || 'bjd';
-  const bg = p.image ? `style="background-image:url('${p.image}')"` : `class="detail-photo ${cls}"`;
   const f = feeBreakdown(p.price);
   $('#detailBody').innerHTML = `
-    <div class="detail-photo ${p.image?'':cls}" ${p.image?`style="background-image:url('${p.image}')"`:''}>${p.image?'':(p.emoji||'🎎')}</div>
+    <div class="detail-photo ${p.image?'':cls}" ${p.image?`style="background-image:url('${escapeHtml(p.image)}')"`:''}>${p.image?'':(p.emoji||'🎎')}</div>
     <h3>${escapeHtml(p.title)}</h3>
     <p class="sub">${escapeHtml(CAT_NAME[p.cat])} · 賣家 ${escapeHtml(p.sellerName)}</p>
-    <p style="color:#5c4a4a;font-size:.92rem">${escapeHtml(p.desc||'')}</p>
+    <p style="color:#5c4a4a;font-size:.92rem">${escapeHtml(p.desc)}</p>
     <div style="font-family:var(--serif);font-size:1.8rem;margin:6px 0">${money(p.price)}</div>
     <div class="fee-mini">
       <div class="r"><span>買家支付</span><b>${money(p.price)}</b></div>
@@ -274,14 +286,13 @@ function openDetail(id) {
       <button class="btn btn-ghost" data-close>關閉</button>
       <button class="btn btn-green" id="buyNow">立即購買</button>
     </div>
-    <p class="hint" style="margin-top:12px;font-size:.78rem">※ 展示版：此處僅顯示金流費用明細，實際刷卡／付款需串接台灣金流商後啟用。</p>`;
+    <p class="hint" style="margin-top:12px;font-size:.78rem">※ 金流尚未串接：此處僅顯示費用明細，實際付款需完成台灣金流商註冊後啟用。</p>`;
   openModal('detailModal');
   $('#detailModal [data-close]').onclick = () => closeModal($('#detailModal'));
   $('#buyNow').onclick = () => requireLogin(() => {
-    const buyer = Auth.current();
-    if (buyer.name === p.sellerName) { toast('這是你自己刊登的商品'); return; }
+    if (SESSION.user.id === p.sellerId) { toast('這是你自己刊登的商品'); return; }
     closeModal($('#detailModal'));
-    toast(`已建立訂單（展示）：${p.title}`);
+    toast(`已建立訂單（金流待接）：${p.title}`);
   });
 }
 
@@ -314,8 +325,15 @@ $$('#navLinks a').forEach(a => a.onclick = () => $('#navLinks').classList.remove
 $('#feeCommTxt').textContent = `售價 × ${(FEES.commissionRate*100)}%`;
 $('#feePayTxt').textContent = `售價 × ${(FEES.paymentRate*100)}% ＋ NT$${FEES.paymentFixed}`;
 
+/* ---------- 登入狀態變化時同步 UI ---------- */
+sb.auth.onAuthStateChange((_e, session) => { SESSION = session; renderAccount(); });
+
 /* ---------- 啟動 ---------- */
-renderAccount();
-renderZones();
-renderMarket();
-renderCalc();
+(async function init() {
+  renderCalc();
+  await refreshSession();
+  renderAccount();
+  await loadProducts();
+  renderZones();
+  renderMarket();
+})();
