@@ -3,130 +3,176 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>娃娃收藏館 · Doll Gallery</title>
-<meta name="description" content="芭比娃娃與小布娃娃的收藏展示館，依主題分區展示每一位收藏的娃娃。">
+<title>娃娃收藏館 · Doll Gallery &amp; 交易平台</title>
+<meta name="description" content="芭比、小布、BJD 娃娃的收藏展示與交易平台。會員可免費刊登、上傳商品買賣，平台收取成交手續費與金流費。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#fdf7f4;
-    --ink:#3a2c2c;
-    --muted:#8a7570;
-    --line:#eaddd7;
-    --card:#ffffff;
-    --barbie:#e0489a;
-    --barbie-soft:#fce4f1;
-    --blythe:#6c8ec4;
-    --blythe-soft:#e6eef8;
-    --gold:#c9a24b;
-    --shadow:0 10px 30px rgba(120,80,80,.10);
-    --radius:18px;
+    --bg:#fdf7f4;--ink:#3a2c2c;--muted:#8a7570;--line:#eaddd7;--card:#ffffff;
+    --barbie:#e0489a;--barbie-soft:#fce4f1;
+    --blythe:#6c8ec4;--blythe-soft:#e6eef8;
+    --bjd:#8a6bbf;--bjd-soft:#efe8fa;
+    --gold:#c9a24b;--green:#2f9e6f;
+    --shadow:0 10px 30px rgba(120,80,80,.10);--radius:18px;
     --serif:"Noto Serif TC",serif;
     --sans:"Noto Sans TC",system-ui,-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif;
   }
   *{box-sizing:border-box}
   html{scroll-behavior:smooth}
-  body{
-    margin:0;font-family:var(--sans);color:var(--ink);background:var(--bg);
-    line-height:1.7;-webkit-font-smoothing:antialiased;
-  }
+  body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--bg);line-height:1.7;-webkit-font-smoothing:antialiased}
   a{color:inherit;text-decoration:none}
   .wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+  button{font-family:inherit}
 
-  /* ---------- Nav ---------- */
-  header.nav{
-    position:sticky;top:0;z-index:50;
-    background:rgba(253,247,244,.85);backdrop-filter:blur(10px);
-    border-bottom:1px solid var(--line);
-  }
-  .nav-inner{display:flex;align-items:center;justify-content:space-between;height:66px}
-  .brand{font-family:var(--serif);font-weight:700;font-size:1.25rem;letter-spacing:.02em;display:flex;align-items:center;gap:.5rem}
+  /* Nav */
+  header.nav{position:sticky;top:0;z-index:50;background:rgba(253,247,244,.9);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .nav-inner{display:flex;align-items:center;gap:1.2rem;height:66px}
+  .brand{font-family:var(--serif);font-weight:700;font-size:1.2rem;display:flex;align-items:center;gap:.5rem;white-space:nowrap}
   .brand .dot{color:var(--barbie)}
-  .nav-links{display:flex;gap:1.6rem;font-size:.95rem;font-weight:500}
+  .nav-links{display:flex;gap:1.3rem;font-size:.94rem;font-weight:500;margin-left:.5rem}
   .nav-links a{color:var(--muted);transition:color .2s}
   .nav-links a:hover{color:var(--ink)}
+  .nav-account{margin-left:auto;display:flex;align-items:center;gap:.6rem;white-space:nowrap}
   .nav-toggle{display:none;background:none;border:0;font-size:1.5rem;cursor:pointer;color:var(--ink)}
+  .who{font-size:.9rem;color:var(--ink);font-weight:700}
+  .link-btn{background:none;border:0;color:var(--muted);cursor:pointer;font-size:.9rem;font-weight:500}
+  .link-btn:hover{color:var(--ink)}
 
-  /* ---------- Hero ---------- */
-  .hero{
-    padding:84px 0 64px;text-align:center;position:relative;overflow:hidden;
-    background:radial-gradient(1200px 500px at 50% -10%,#fbe9f3 0%,transparent 60%);
-  }
-  .hero .eyebrow{color:var(--gold);font-weight:700;letter-spacing:.28em;font-size:.8rem;text-transform:uppercase}
-  .hero h1{font-family:var(--serif);font-size:clamp(2.2rem,6vw,3.6rem);line-height:1.2;margin:.5rem 0 .4rem}
-  .hero p{max-width:560px;margin:0 auto;color:var(--muted);font-size:1.05rem}
-  .hero-cta{margin-top:28px;display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
-  .btn{
-    display:inline-flex;align-items:center;gap:.5rem;padding:12px 26px;border-radius:999px;
-    font-weight:700;font-size:.95rem;transition:transform .18s,box-shadow .18s;
-  }
-  .btn-pink{background:var(--barbie);color:#fff;box-shadow:0 8px 20px rgba(224,72,154,.35)}
-  .btn-blue{background:var(--blythe);color:#fff;box-shadow:0 8px 20px rgba(108,142,196,.35)}
+  /* Buttons */
+  .btn{display:inline-flex;align-items:center;gap:.5rem;padding:11px 22px;border-radius:999px;font-weight:700;font-size:.92rem;transition:transform .18s,box-shadow .18s;border:0;cursor:pointer}
+  .btn-pink{background:var(--barbie);color:#fff;box-shadow:0 8px 20px rgba(224,72,154,.32)}
+  .btn-blue{background:var(--blythe);color:#fff;box-shadow:0 8px 20px rgba(108,142,196,.32)}
+  .btn-bjd{background:var(--bjd);color:#fff;box-shadow:0 8px 20px rgba(138,107,191,.32)}
+  .btn-dark{background:var(--ink);color:#fff}
+  .btn-ghost{background:#fff;color:var(--ink);border:1px solid var(--line)}
+  .btn-green{background:var(--green);color:#fff}
   .btn:hover{transform:translateY(-2px)}
+  .btn-sm{padding:8px 16px;font-size:.85rem}
 
-  /* ---------- Section shell ---------- */
-  section.zone{padding:72px 0;scroll-margin-top:80px}
-  .zone-head{display:flex;align-items:flex-end;justify-content:space-between;gap:1rem;margin-bottom:34px;flex-wrap:wrap}
-  .zone-title{font-family:var(--serif);font-size:clamp(1.7rem,4vw,2.4rem);margin:0;display:flex;align-items:center;gap:.6rem}
-  .zone-title .badge{font-size:.72rem;font-family:var(--sans);font-weight:700;letter-spacing:.1em;padding:5px 12px;border-radius:999px;transform:translateY(-4px)}
+  /* Hero */
+  .hero{padding:80px 0 60px;text-align:center;background:radial-gradient(1200px 500px at 50% -10%,#fbe9f3 0%,transparent 60%)}
+  .hero .eyebrow{color:var(--gold);font-weight:700;letter-spacing:.28em;font-size:.8rem;text-transform:uppercase}
+  .hero h1{font-family:var(--serif);font-size:clamp(2.1rem,6vw,3.5rem);line-height:1.2;margin:.5rem 0 .4rem}
+  .hero p{max-width:600px;margin:0 auto;color:var(--muted);font-size:1.05rem}
+  .hero-cta{margin-top:26px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+  .hero-note{margin-top:16px;font-size:.85rem;color:var(--muted)}
+  .hero-note b{color:var(--green)}
+
+  /* Section shell */
+  section.zone{padding:66px 0;scroll-margin-top:80px}
+  .zone-head{display:flex;align-items:flex-end;justify-content:space-between;gap:1rem;margin-bottom:32px;flex-wrap:wrap}
+  .zone-title{font-family:var(--serif);font-size:clamp(1.6rem,4vw,2.3rem);margin:0;display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
+  .zone-title .badge{font-size:.72rem;font-family:var(--sans);font-weight:700;letter-spacing:.1em;padding:5px 12px;border-radius:999px;transform:translateY(-3px)}
   .badge-pink{background:var(--barbie-soft);color:var(--barbie)}
   .badge-blue{background:var(--blythe-soft);color:var(--blythe)}
-  .zone-sub{color:var(--muted);max-width:520px;margin:.4rem 0 0}
+  .badge-bjd{background:var(--bjd-soft);color:var(--bjd)}
+  .zone-sub{color:var(--muted);max-width:560px;margin:.4rem 0 0}
   .count{color:var(--muted);font-size:.9rem;font-weight:700;white-space:nowrap}
 
-  /* ---------- Zone map (overview) ---------- */
-  .map-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
-  .map-card{
-    border-radius:var(--radius);padding:30px;color:#fff;position:relative;overflow:hidden;
-    min-height:180px;display:flex;flex-direction:column;justify-content:flex-end;box-shadow:var(--shadow);
-  }
+  /* Zone map */
+  .map-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  .map-card{border-radius:var(--radius);padding:28px;color:#fff;position:relative;overflow:hidden;min-height:172px;display:flex;flex-direction:column;justify-content:flex-end;box-shadow:var(--shadow)}
   .map-card.pink{background:linear-gradient(135deg,#f06db0,#d63c8e)}
   .map-card.blue{background:linear-gradient(135deg,#8aa9d6,#5a79b3)}
-  .map-card .k{font-size:2.4rem;line-height:1;margin-bottom:auto}
-  .map-card h3{font-family:var(--serif);font-size:1.5rem;margin:14px 0 4px}
-  .map-card p{margin:0;opacity:.92;font-size:.92rem}
-  .map-card .go{margin-top:14px;font-weight:700;font-size:.9rem}
+  .map-card.bjd{background:linear-gradient(135deg,#a487d6,#7357a8)}
+  .map-card .k{font-size:2.3rem;line-height:1;margin-bottom:auto}
+  .map-card h3{font-family:var(--serif);font-size:1.4rem;margin:12px 0 4px}
+  .map-card p{margin:0;opacity:.92;font-size:.9rem}
+  .map-card .go{margin-top:12px;font-weight:700;font-size:.88rem}
 
-  /* ---------- Doll grid ---------- */
+  /* Doll / product grid */
   .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
-  .doll{
-    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;
-    box-shadow:var(--shadow);transition:transform .2s,box-shadow .2s;
-  }
+  .doll{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);transition:transform .2s,box-shadow .2s;display:flex;flex-direction:column}
   .doll:hover{transform:translateY(-4px);box-shadow:0 16px 36px rgba(120,80,80,.16)}
-  .doll .photo{height:230px;display:flex;align-items:center;justify-content:center;font-size:4.2rem;position:relative}
+  .doll .photo{height:220px;display:flex;align-items:center;justify-content:center;font-size:4rem;position:relative;background-size:cover;background-position:center}
   .doll.pink .photo{background:linear-gradient(160deg,#fce4f1,#f7c7e0)}
   .doll.blue .photo{background:linear-gradient(160deg,#e6eef8,#cfdcf1)}
-  .doll .tag{position:absolute;top:12px;left:12px;background:rgba(255,255,255,.85);color:var(--ink);font-size:.72rem;font-weight:700;padding:4px 10px;border-radius:999px}
-  .doll .body{padding:18px 20px 22px}
-  .doll h4{margin:0 0 4px;font-family:var(--serif);font-size:1.15rem}
-  .doll .meta{color:var(--muted);font-size:.86rem;margin:0 0 10px}
-  .doll .desc{font-size:.9rem;color:#5c4a4a;margin:0}
+  .doll.bjd .photo{background:linear-gradient(160deg,#efe8fa,#dccef2)}
+  .doll .tag{position:absolute;top:12px;left:12px;background:rgba(255,255,255,.88);color:var(--ink);font-size:.72rem;font-weight:700;padding:4px 10px;border-radius:999px}
+  .doll .price-tag{position:absolute;top:12px;right:12px;background:var(--ink);color:#fff;font-size:.8rem;font-weight:700;padding:4px 10px;border-radius:999px}
+  .doll .body{padding:16px 18px 20px;display:flex;flex-direction:column;flex:1}
+  .doll h4{margin:0 0 4px;font-family:var(--serif);font-size:1.12rem}
+  .doll .meta{color:var(--muted);font-size:.84rem;margin:0 0 8px}
+  .doll .desc{font-size:.88rem;color:#5c4a4a;margin:0 0 14px;flex:1}
+  .doll .row{display:flex;align-items:center;justify-content:space-between;gap:.5rem}
+  .doll .seller{font-size:.78rem;color:var(--muted)}
 
-  /* ---------- About ---------- */
-  .about{background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  /* Marketplace bar */
+  .mkt-bar{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;margin-bottom:26px}
+  .chip{border:1px solid var(--line);background:#fff;color:var(--muted);padding:8px 16px;border-radius:999px;font-size:.88rem;font-weight:500;cursor:pointer}
+  .chip.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .mkt-empty{text-align:center;color:var(--muted);padding:50px 0;border:1px dashed var(--line);border-radius:var(--radius)}
+
+  /* Fees */
+  .fees{background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .fee-grid{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center}
+  .fee-list{list-style:none;padding:0;margin:18px 0 0}
+  .fee-list li{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--line)}
+  .fee-list li b{font-weight:700}
+  .fee-free{color:var(--green);font-weight:700}
+  .calc{background:var(--bg);border:1px solid var(--line);border-radius:var(--radius);padding:24px}
+  .calc h3{margin:0 0 14px;font-family:var(--serif)}
+  .calc label{font-size:.85rem;color:var(--muted);display:block;margin-bottom:6px}
+  .calc input{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:12px;font-size:1.1rem;font-family:inherit}
+  .calc-out{margin-top:18px;font-size:.92rem}
+  .calc-out .r{display:flex;justify-content:space-between;padding:7px 0}
+  .calc-out .r.total{border-top:2px solid var(--ink);margin-top:6px;padding-top:12px;font-weight:700;font-size:1.05rem}
+  .calc-out .r .g{color:var(--green);font-weight:700}
+  .calc-out .r .d{color:var(--barbie)}
+
+  /* About */
   .about-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:44px;align-items:center}
   .about h2{font-family:var(--serif);font-size:2rem;margin:0 0 12px}
   .about p{color:var(--muted)}
-  .stats{display:flex;gap:30px;margin-top:24px}
-  .stat .n{font-family:var(--serif);font-size:2.2rem;color:var(--barbie)}
+  .stats{display:flex;gap:30px;margin-top:22px}
+  .stat .n{font-family:var(--serif);font-size:2.1rem;color:var(--barbie)}
   .stat .l{color:var(--muted);font-size:.85rem}
 
-  /* ---------- Footer ---------- */
-  footer{padding:46px 0;text-align:center;color:var(--muted);font-size:.9rem}
+  /* Footer */
+  footer{padding:44px 0;text-align:center;color:var(--muted);font-size:.9rem}
   footer .brand{justify-content:center;margin-bottom:8px;color:var(--ink)}
+  .notice{max-width:640px;margin:14px auto 0;font-size:.8rem;color:var(--muted);background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 16px}
 
-  /* ---------- Responsive ---------- */
+  /* Modal */
+  .modal-back{position:fixed;inset:0;background:rgba(58,44,44,.5);backdrop-filter:blur(3px);z-index:100;display:none;align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto}
+  .modal-back.open{display:flex}
+  .modal{background:#fff;border-radius:22px;max-width:460px;width:100%;padding:30px;box-shadow:0 30px 70px rgba(0,0,0,.25);animation:pop .2s ease}
+  .modal.wide{max-width:540px}
+  @keyframes pop{from{transform:translateY(12px);opacity:0}to{transform:none;opacity:1}}
+  .modal h3{font-family:var(--serif);font-size:1.5rem;margin:0 0 4px}
+  .modal .sub{color:var(--muted);font-size:.9rem;margin:0 0 20px}
+  .modal .close{float:right;background:none;border:0;font-size:1.4rem;cursor:pointer;color:var(--muted);line-height:1}
+  .field{margin-bottom:14px}
+  .field label{display:block;font-size:.85rem;font-weight:500;margin-bottom:6px}
+  .field input,.field textarea,.field select{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:12px;font-size:.95rem;font-family:inherit;background:#fff}
+  .field textarea{resize:vertical;min-height:80px}
+  .field .hint{font-size:.78rem;color:var(--muted);margin-top:5px}
+  .modal-actions{margin-top:20px;display:flex;gap:10px}
+  .modal-actions .btn{flex:1;justify-content:center}
+  .switch-line{text-align:center;margin-top:16px;font-size:.88rem;color:var(--muted)}
+  .switch-line button{background:none;border:0;color:var(--barbie);font-weight:700;cursor:pointer}
+  .err{color:#c0392b;font-size:.85rem;margin-top:10px;min-height:1em}
+  .drop{border:2px dashed var(--line);border-radius:14px;padding:22px;text-align:center;color:var(--muted);cursor:pointer;font-size:.9rem}
+  .drop.has{border-color:var(--bjd);color:var(--ink)}
+  .drop img{max-height:140px;border-radius:10px;margin-top:6px}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 22px;border-radius:999px;font-size:.9rem;z-index:200;opacity:0;transition:opacity .3s,transform .3s;pointer-events:none}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(-4px)}
+  .detail-photo{height:220px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:4rem;background-size:cover;background-position:center;margin-bottom:16px}
+  .fee-mini{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-top:14px;font-size:.9rem}
+  .fee-mini .r{display:flex;justify-content:space-between;padding:5px 0}
+  .fee-mini .r.total{border-top:1px solid var(--line);margin-top:4px;padding-top:9px;font-weight:700}
+
   @media(max-width:860px){
+    .map-grid{grid-template-columns:1fr}
     .grid{grid-template-columns:repeat(2,1fr)}
-    .about-grid{grid-template-columns:1fr;gap:26px}
+    .fee-grid,.about-grid{grid-template-columns:1fr;gap:26px}
   }
   @media(max-width:620px){
-    .nav-links{display:none;position:absolute;top:66px;left:0;right:0;flex-direction:column;background:var(--bg);border-bottom:1px solid var(--line);padding:18px 24px;gap:16px}
+    .nav-links{display:none;position:absolute;top:66px;left:0;right:0;flex-direction:column;background:var(--bg);border-bottom:1px solid var(--line);padding:18px 24px;gap:14px;margin:0}
     .nav-links.open{display:flex}
     .nav-toggle{display:block}
-    .map-grid{grid-template-columns:1fr}
     .grid{grid-template-columns:1fr}
   }
 </style>
@@ -138,10 +184,13 @@
     <div class="brand"><span class="dot">●</span> 娃娃收藏館</div>
     <nav class="nav-links" id="navLinks">
       <a href="#overview">專區總覽</a>
-      <a href="#barbie">芭比娃娃</a>
-      <a href="#blythe">小布娃娃</a>
-      <a href="#about">關於收藏</a>
+      <a href="#barbie">芭比</a>
+      <a href="#blythe">小布</a>
+      <a href="#bjd">BJD</a>
+      <a href="#market">商城</a>
+      <a href="#fees">費用</a>
     </nav>
+    <div class="nav-account" id="navAccount"><!-- filled by JS --></div>
     <button class="nav-toggle" id="navToggle" aria-label="選單">☰</button>
   </div>
 </header>
@@ -149,17 +198,18 @@
 <!-- HERO -->
 <section class="hero">
   <div class="wrap">
-    <div class="eyebrow">Doll Gallery</div>
-    <h1>依主題分區的<br>娃娃收藏展示館</h1>
-    <p>把每一位收藏的娃娃，安放在專屬的展示區。這裡有華麗經典的芭比娃娃，也有靈動可愛的小布娃娃。</p>
+    <div class="eyebrow">Doll Gallery &amp; Marketplace</div>
+    <h1>收藏、展示，也能<br>買賣的娃娃平台</h1>
+    <p>芭比、小布、BJD 依主題分區展示。成為會員即可免費刊登，上傳自己的娃娃商品買賣，平台只在成交時收取手續費與金流費。</p>
     <div class="hero-cta">
-      <a href="#barbie" class="btn btn-pink">逛芭比專區 →</a>
-      <a href="#blythe" class="btn btn-blue">逛小布專區 →</a>
+      <a href="#market" class="btn btn-dark">逛商城 →</a>
+      <button class="btn btn-bjd" id="heroSell">刊登商品（免費）</button>
     </div>
+    <div class="hero-note">刊登 <b>免費</b> · 成交才收費 · 支援芭比／小布／BJD</div>
   </div>
 </section>
 
-<!-- ZONE OVERVIEW / 區域規劃 -->
+<!-- ZONE OVERVIEW -->
 <section class="zone" id="overview">
   <div class="wrap">
     <div class="zone-head">
@@ -169,118 +219,103 @@
       </div>
     </div>
     <div class="map-grid">
-      <a class="map-card pink" href="#barbie">
-        <div class="k">👗</div>
-        <h3>芭比娃娃專區</h3>
-        <p>經典時尚系列，華麗造型與換裝收藏。</p>
-        <div class="go">進入專區 →</div>
-      </a>
-      <a class="map-card blue" href="#blythe">
-        <div class="k">👧</div>
-        <h3>小布娃娃專區</h3>
-        <p>大眼變色的 Blythe，療癒又有個性。</p>
-        <div class="go">進入專區 →</div>
-      </a>
+      <a class="map-card pink" href="#barbie"><div class="k">👗</div><h3>芭比娃娃專區</h3><p>經典時尚系列，華麗造型與換裝收藏。</p><div class="go">進入專區 →</div></a>
+      <a class="map-card blue" href="#blythe"><div class="k">👧</div><h3>小布娃娃專區</h3><p>大眼變色的 Blythe，療癒又有個性。</p><div class="go">進入專區 →</div></a>
+      <a class="map-card bjd" href="#bjd"><div class="k">🎎</div><h3>BJD 專區</h3><p>球型關節人形，可換頭體、妝容與眼珠。</p><div class="go">進入專區 →</div></a>
     </div>
   </div>
 </section>
 
-<!-- 芭比娃娃專區 -->
+<!-- 芭比 -->
 <section class="zone" id="barbie" style="background:linear-gradient(180deg,#fff6fb,transparent)">
   <div class="wrap">
     <div class="zone-head">
-      <div>
-        <h2 class="zone-title">芭比娃娃專區 <span class="badge badge-pink">BARBIE</span></h2>
-        <p class="zone-sub">時尚icon的代名詞。從復刻經典到華麗禮服，收錄每一款值得珍藏的芭比。</p>
-      </div>
-      <div class="count">共 3 位收藏</div>
+      <div><h2 class="zone-title">芭比娃娃專區 <span class="badge badge-pink">BARBIE</span></h2>
+      <p class="zone-sub">時尚icon的代名詞。從復刻經典到華麗禮服，收錄每一款值得珍藏的芭比。</p></div>
     </div>
-    <div class="grid">
-      <article class="doll pink">
-        <div class="photo">💃<span class="tag">經典系列</span></div>
-        <div class="body">
-          <h4>復刻經典芭比</h4>
-          <p class="meta">1959 復刻 · 條紋泳裝</p>
-          <p class="desc">向初代芭比致敬的復刻款，黑白條紋泳裝與招牌馬尾。</p>
-        </div>
-      </article>
-      <article class="doll pink">
-        <div class="photo">👛<span class="tag">禮服系列</span></div>
-        <div class="body">
-          <h4>晚宴禮服芭比</h4>
-          <p class="meta">Collector · 亮片長裙</p>
-          <p class="desc">華麗亮片禮服搭配長手套，收藏家系列的代表造型。</p>
-        </div>
-      </article>
-      <article class="doll pink">
-        <div class="photo">🎀<span class="tag">聯名款</span></div>
-        <div class="body">
-          <h4>聯名限量芭比</h4>
-          <p class="meta">Limited · 限量編號</p>
-          <p class="desc">品牌聯名的限量款式，附收藏證與專屬包裝。</p>
-        </div>
-      </article>
-    </div>
+    <div class="grid" id="grid-barbie"></div>
   </div>
 </section>
 
-<!-- 小布娃娃專區 -->
+<!-- 小布 -->
 <section class="zone" id="blythe" style="background:linear-gradient(180deg,#f4f8ff,transparent)">
   <div class="wrap">
     <div class="zone-head">
-      <div>
-        <h2 class="zone-title">小布娃娃專區 <span class="badge badge-blue">BLYTHE</span></h2>
-        <p class="zone-sub">招牌大眼睛會變色，換髮、換裝、改娃都好玩。收錄每一隻獨一無二的小布。</p>
-      </div>
-      <div class="count">共 3 位收藏</div>
+      <div><h2 class="zone-title">小布娃娃專區 <span class="badge badge-blue">BLYTHE</span></h2>
+      <p class="zone-sub">招牌大眼睛會變色，換髮、換裝、改娃都好玩。收錄每一隻獨一無二的小布。</p></div>
     </div>
-    <div class="grid">
-      <article class="doll blue">
-        <div class="photo">🧸<span class="tag">原裝款</span></div>
-        <div class="body">
-          <h4>原裝小布</h4>
-          <p class="meta">Neo Blythe · 原廠妝</p>
-          <p class="desc">保留原廠妝容與眼片的原裝小布，變色拉繩完好。</p>
-        </div>
-      </article>
-      <article class="doll blue">
-        <div class="photo">🌸<span class="tag">改娃款</span></div>
-        <div class="body">
-          <h4>訂製改娃小布</h4>
-          <p class="meta">Custom · 手繪妝</p>
-          <p class="desc">手繪重妝與植髮的訂製款，五官更柔和、獨一無二。</p>
-        </div>
-      </article>
-      <article class="doll blue">
-        <div class="photo">☕<span class="tag">迷你款</span></div>
-        <div class="body">
-          <h4>Petite 迷你小布</h4>
-          <p class="meta">Petite · 掌心尺寸</p>
-          <p class="desc">掌心大小的迷你版本，適合擺飾與外出拍照。</p>
-        </div>
-      </article>
+    <div class="grid" id="grid-blythe"></div>
+  </div>
+</section>
+
+<!-- BJD -->
+<section class="zone" id="bjd" style="background:linear-gradient(180deg,#f6f2fd,transparent)">
+  <div class="wrap">
+    <div class="zone-head">
+      <div><h2 class="zone-title">BJD 專區 <span class="badge badge-bjd">BALL-JOINTED DOLL</span></h2>
+      <p class="zone-sub">球型關節人形，可自由換頭、換體、改妝與換眼。收錄各尺寸（1/3、1/4、1/6）的訂製與原廠娃。</p></div>
+    </div>
+    <div class="grid" id="grid-bjd"></div>
+  </div>
+</section>
+
+<!-- 商城 MARKETPLACE -->
+<section class="zone" id="market" style="background:#fff;border-top:1px solid var(--line)">
+  <div class="wrap">
+    <div class="zone-head">
+      <div><h2 class="zone-title">娃娃商城 <span class="badge" style="background:#efeae6;color:var(--ink)">MARKETPLACE</span></h2>
+      <p class="zone-sub">會員上架的娃娃、配件與服裝，直接在這裡買賣。刊登免費，成交才收費。</p></div>
+      <button class="btn btn-dark btn-sm" id="mktSell">＋ 刊登我的商品</button>
+    </div>
+    <div class="mkt-bar" id="mktBar">
+      <button class="chip active" data-cat="all">全部</button>
+      <button class="chip" data-cat="barbie">芭比</button>
+      <button class="chip" data-cat="blythe">小布</button>
+      <button class="chip" data-cat="bjd">BJD</button>
+      <button class="chip" data-cat="accessory">配件/服裝</button>
+    </div>
+    <div class="grid" id="grid-market"></div>
+    <div class="mkt-empty" id="mktEmpty" hidden>這個分類目前還沒有商品，成為第一個刊登的人吧！</div>
+  </div>
+</section>
+
+<!-- 費用 FEES -->
+<section class="zone fees" id="fees">
+  <div class="wrap fee-grid">
+    <div>
+      <h2 class="zone-title" style="font-size:2rem">平台費用說明</h2>
+      <p class="zone-sub">刊登永遠免費，平台只在「成交」時，從賣家收款中收取手續費與金流費。買家付的就是標示的售價。</p>
+      <ul class="fee-list">
+        <li><span>刊登商品</span><b class="fee-free">免費</b></li>
+        <li><span>成交手續費</span><b id="feeCommTxt">售價 × 5%</b></li>
+        <li><span>金流處理費</span><b id="feePayTxt">售價 × 2.5% ＋ NT$5</b></li>
+        <li><span>賣家實收</span><b>售價 − 手續費 − 金流費</b></li>
+      </ul>
+      <p class="hint" style="font-size:.8rem;color:var(--muted);margin-top:12px">※ 費率為預設值，之後可調整。實際收款與撥款需串接金流商後啟用。</p>
+    </div>
+    <div class="calc">
+      <h3>成交費用試算</h3>
+      <label for="calcPrice">商品售價（買家支付）</label>
+      <input id="calcPrice" type="number" min="0" step="10" value="3000">
+      <div class="calc-out" id="calcOut"></div>
     </div>
   </div>
 </section>
 
 <!-- ABOUT -->
-<section class="zone about" id="about">
+<section class="zone about">
   <div class="wrap about-grid">
     <div>
-      <h2>關於這座收藏館</h2>
-      <p>這裡是一位娃娃愛好者的私人收藏展示。每一位娃娃都依系列被安放在專屬展區，慢慢累積、細心整理。未來會持續新增更多娃娃與專區。</p>
+      <h2>關於這個平台</h2>
+      <p>這裡結合了「收藏展示」與「同好交易」。你可以把心愛的娃娃分區展示，也能把想割愛的娃娃、配件、服裝免費刊登出售。平台以最低負擔的方式運作：刊登不收錢，只在成交時收取手續費與金流費。</p>
       <div class="stats">
-        <div class="stat"><div class="n">2</div><div class="l">展示專區</div></div>
-        <div class="stat"><div class="n">6</div><div class="l">收藏娃娃</div></div>
-        <div class="stat"><div class="n">∞</div><div class="l">持續增加</div></div>
+        <div class="stat"><div class="n">3</div><div class="l">展示專區</div></div>
+        <div class="stat"><div class="n" id="statItems">0</div><div class="l">商城商品</div></div>
+        <div class="stat"><div class="n">0元</div><div class="l">刊登費</div></div>
       </div>
     </div>
     <div class="map-grid" style="grid-template-columns:1fr">
-      <div class="map-card pink" style="min-height:150px">
-        <div class="k">🏛️</div>
-        <h3>依系列分區</h3>
-        <p>芭比、小布各自成區，之後可再擴充新系列。</p>
-      </div>
+      <div class="map-card bjd" style="min-height:150px"><div class="k">🤝</div><h3>同好之間，安心買賣</h3><p>免費刊登、成交才收費，讓每一位娃娃都能找到新主人。</p></div>
     </div>
   </div>
 </section>
@@ -288,14 +323,92 @@
 <footer>
   <div class="wrap">
     <div class="brand"><span class="dot" style="color:var(--barbie)">●</span> 娃娃收藏館</div>
-    <div>© 2026 Doll Gallery · 個人娃娃收藏展示</div>
+    <div>© 2026 Doll Gallery &amp; Marketplace · 個人娃娃收藏與交易平台</div>
+    <div class="notice">目前為<b>展示版</b>：會員與商品資料暫存在你的瀏覽器本機，尚未串接真正的後端與金流。串接 Supabase（會員/資料）與台灣金流（綠界／藍新／LINE Pay）後即可正式收款。</div>
   </div>
 </footer>
 
-<script>
-  const t=document.getElementById('navToggle'),l=document.getElementById('navLinks');
-  t.addEventListener('click',()=>l.classList.toggle('open'));
-  l.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>l.classList.remove('open')));
-</script>
+<!-- AUTH MODAL -->
+<div class="modal-back" id="authModal">
+  <div class="modal">
+    <button class="close" data-close>×</button>
+    <h3 id="authTitle">會員登入</h3>
+    <p class="sub" id="authSub">登入後即可刊登商品、管理你的販售。</p>
+    <div class="field" id="nameField" hidden>
+      <label>暱稱</label>
+      <input id="authName" type="text" placeholder="你的顯示名稱" autocomplete="name">
+    </div>
+    <div class="field">
+      <label>Email</label>
+      <input id="authEmail" type="email" placeholder="you@example.com" autocomplete="email">
+    </div>
+    <div class="field">
+      <label>密碼</label>
+      <input id="authPass" type="password" placeholder="至少 6 碼" autocomplete="current-password">
+      <div class="hint">※ 展示版：密碼僅存於本機瀏覽器，請勿使用真實常用密碼。</div>
+    </div>
+    <div class="err" id="authErr"></div>
+    <div class="modal-actions">
+      <button class="btn btn-dark" id="authSubmit">登入</button>
+    </div>
+    <div class="switch-line">
+      <span id="authSwitchText">還沒有帳號？</span>
+      <button id="authSwitch">註冊新帳號</button>
+    </div>
+  </div>
+</div>
+
+<!-- SELL / UPLOAD MODAL -->
+<div class="modal-back" id="sellModal">
+  <div class="modal wide">
+    <button class="close" data-close>×</button>
+    <h3>刊登商品</h3>
+    <p class="sub">填寫商品資訊並上傳照片。刊登免費，成交時才收取手續費與金流費。</p>
+    <div class="field">
+      <label>商品名稱</label>
+      <input id="pTitle" type="text" placeholder="例：Neo Blythe 原裝款 附原盒">
+    </div>
+    <div class="field">
+      <label>分類</label>
+      <select id="pCat">
+        <option value="barbie">芭比 Barbie</option>
+        <option value="blythe">小布 Blythe</option>
+        <option value="bjd" selected>BJD</option>
+        <option value="accessory">配件／服裝</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>售價（NT$）</label>
+      <input id="pPrice" type="number" min="0" step="10" placeholder="3000">
+      <div class="hint" id="pFeeHint"></div>
+    </div>
+    <div class="field">
+      <label>商品描述</label>
+      <textarea id="pDesc" placeholder="尺寸、品項狀況、附件、是否含運…"></textarea>
+    </div>
+    <div class="field">
+      <label>商品照片</label>
+      <div class="drop" id="pDrop">點此上傳照片（或直接用系列色卡）<div id="pPreview"></div></div>
+      <input id="pFile" type="file" accept="image/*" hidden>
+    </div>
+    <div class="err" id="sellErr"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" data-close>取消</button>
+      <button class="btn btn-bjd" id="sellSubmit">確認刊登（免費）</button>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL / CHECKOUT MODAL -->
+<div class="modal-back" id="detailModal">
+  <div class="modal wide">
+    <button class="close" data-close>×</button>
+    <div id="detailBody"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="app.js"></script>
 </body>
 </html>
