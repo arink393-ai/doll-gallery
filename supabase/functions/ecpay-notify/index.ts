@@ -37,6 +37,17 @@ Deno.serve(async (req) => {
         payment_type: params.PaymentType || null,
         paid_at: paid ? new Date().toISOString() : null,
       }).eq("id", order.id);
+
+      // 募資贊助付款成功 → 累加該專案已預訂件數
+      if (paid && order.campaign_id) {
+        const { data: camp } = await admin.from("doll_campaigns")
+          .select("pledged_qty").eq("id", order.campaign_id).single();
+        if (camp) {
+          await admin.from("doll_campaigns")
+            .update({ pledged_qty: (camp.pledged_qty || 0) + (order.qty || 1) })
+            .eq("id", order.campaign_id);
+        }
+      }
     }
 
     return new Response("1|OK", { status: 200 });

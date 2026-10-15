@@ -37,19 +37,46 @@ Deno.serve(async (req) => {
     if (userErr || !userData.user) return json({ error: "請先登入再購買。" }, 401);
     const buyer = userData.user;
 
-    const { product_id } = await req.json().catch(() => ({}));
-    if (!product_id) return json({ error: "缺少商品 ID。" }, 400);
+    const { product_id, campaign_id, qty } = await req.json().catch(() => ({}));
 
-    // 取商品
-    const { data: product, error: pErr } = await admin
-      .from("doll_products").select("*").eq("id", product_id).single();
-    if (pErr || !product) return json({ error: "找不到商品。" }, 404);
-    if (!product.for_sale) return json({ error: "此商品非販售品。" }, 400);
-    if (product.seller_id && product.seller_id === buyer.id)
-      return json({ error: "不能購買自己刊登的商品。" }, 400);
+    // 組訂單資料：一般商品 or 棉花娃娃募資贊助
+    let orderRow: Record<string, unknown>;
+    let itemNameRaw: string;
+    let amount: number;
+
+    if (campaign_id) {
+      const n = Math.max(1, Math.min(99, parseInt(qty) || 1));
+      const { data: camp, error: cErr } = await admin
+        .from("doll_campaigns").select("*").eq("id", campaign_id).single();
+      if (cErr || !camp) return json({ error: "找不到募資專案。" }, 404);
+      if (!camp.active) return json({ error: "此募資專案已關閉。" }, 400);
+      if (new Date(camp.deadline).getTime() < Date.now())
+        return json({ error: "此募資專案已截止。" }, 400);
+      amount = camp.unit_price * n;
+      itemNameRaw = `${camp.title} x${n}`;
+      orderRow = {
+        campaign_id: camp.id, qty: n,
+        product_title: `${camp.title}（募資 x${n}）`,
+        seller_id: camp.creator_id, seller_name: camp.creator_name,
+      };
+    } else {
+      if (!product_id) return json({ error: "缺少商品 ID。" }, 400);
+      const { data: product, error: pErr } = await admin
+        .from("doll_products").select("*").eq("id", product_id).single();
+      if (pErr || !product) return json({ error: "找不到商品。" }, 404);
+      if (!product.for_sale) return json({ error: "此商品非販售品。" }, 400);
+      if (product.seller_id && product.seller_id === buyer.id)
+        return json({ error: "不能購買自己刊登的商品。" }, 400);
+      amount = product.price;
+      itemNameRaw = product.title;
+      orderRow = {
+        product_id: product.id, qty: 1,
+        product_title: product.title,
+        seller_id: product.seller_id, seller_name: product.seller_name,
+      };
+    }
 
     // 費用
-    const amount = product.price;
     const feeCommission = Math.round(amount * COMMISSION_RATE);
     const feePayment = Math.round(amount * PAYMENT_RATE + PAYMENT_FIXED);
     const sellerPayout = amount - feeCommission - feePayment;
@@ -59,11 +86,8 @@ Deno.serve(async (req) => {
 
     // 建立訂單（pending）
     const { data: order, error: oErr } = await admin.from("doll_orders").insert({
+      ...orderRow,
       merchant_trade_no: merchantTradeNo,
-      product_id: product.id,
-      product_title: product.title,
-      seller_id: product.seller_id,
-      seller_name: product.seller_name,
       buyer_id: buyer.id,
       buyer_email: buyer.email,
       amount, fee_commission: feeCommission, fee_payment: feePayment,
@@ -73,7 +97,7 @@ Deno.serve(async (req) => {
 
     // 綠界參數
     const notifyURL = `${SUPABASE_URL}/functions/v1/ecpay-notify`;
-    const itemName = String(product.title).replace(/[#&]/g, " ").slice(0, 200);
+    const itemName = String(itemNameRaw).replace(/[#&]/g, " ").slice(0, 200);
     const params: Record<string, string> = {
       MerchantID: MERCHANT_ID,
       MerchantTradeNo: merchantTradeNo,
