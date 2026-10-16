@@ -59,6 +59,33 @@ Deno.serve(async (req) => {
       out.campaign = { id: data.id, image_url };
     }
 
+    // 4) 依 email 查使用者
+    async function findUser(email: string) {
+      const { data } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+      return data?.users?.find((u) => (u.email || "").toLowerCase() === email.toLowerCase()) || null;
+    }
+    if (body.lookup_email) {
+      const u = await findUser(body.lookup_email);
+      out.user = u ? { id: u.id, email: u.email, name: u.user_metadata?.name } : null;
+    }
+
+    // 5) 把所有募資專案（可含商品）指派給某 email 的帳號當團主/賣家
+    if (body.assign_owner) {
+      const email = body.assign_owner.email;
+      const u = await findUser(email);
+      if (!u) { out.assign_owner = "user_not_found"; }
+      else {
+        const name = body.assign_owner.creator_name || u.user_metadata?.name || "團主";
+        const r1 = await admin.from("doll_campaigns").update({ creator_id: u.id, creator_name: name }).not("id", "is", null);
+        const res: Record<string, unknown> = { user_id: u.id, name, campaigns: r1.error ? ("err:" + r1.error.message) : "ok" };
+        if (body.assign_owner.also_products) {
+          const r2 = await admin.from("doll_products").update({ seller_id: u.id, seller_name: name }).eq("for_sale", true);
+          res.products = r2.error ? ("err:" + r2.error.message) : "ok";
+        }
+        out.assign_owner = res;
+      }
+    }
+
     return new Response(JSON.stringify({ ok: true, ...out }), { headers: { "Content-Type": "application/json" } });
   } catch (e) {
     return new Response(JSON.stringify({ error: (e as Error).message }), { status: 500, headers: { "Content-Type": "application/json" } });
