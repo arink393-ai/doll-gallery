@@ -52,6 +52,9 @@ create or replace function public.can_sell(uid uuid) returns boolean
 $$;
 
 -- 收緊「刊登商品 / 發起募資」的 insert：需通過 can_sell
+-- 注意：原始 schema 的政策名是 dollprod_insert_own，一定要連它一起 drop，
+-- 否則舊的寬鬆政策（只檢查 seller_id）會與新政策 OR，導致審核擋不住。
+drop policy if exists "dollprod_insert_own" on public.doll_products;
 drop policy if exists "products_insert_own" on public.doll_products;
 create policy "products_insert_own" on public.doll_products for insert to authenticated
   with check (auth.uid() = seller_id and public.can_sell(auth.uid()));

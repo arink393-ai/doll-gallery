@@ -59,6 +59,26 @@ Deno.serve(async (req) => {
       out.campaign = { id: data.id, image_url };
     }
 
+    // 3b) 切換進駐模式
+    if (typeof body.set_approval_mode === "boolean") {
+      const { error } = await admin.from("doll_settings")
+        .upsert({ id: "platform", require_vendor_approval: body.set_approval_mode });
+      out.set_approval_mode = error ? ("err:" + error.message) : body.set_approval_mode;
+    }
+    // 3c) 設某 email 的賣家狀態（測試/人工核准用）
+    if (body.set_vendor_status) {
+      const u = await (async () => {
+        const { data } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+        return data?.users?.find((x) => (x.email || "").toLowerCase() === body.set_vendor_status.email.toLowerCase()) || null;
+      })();
+      if (!u) { out.set_vendor_status = "user_not_found"; }
+      else {
+        const { error } = await admin.from("doll_vendors")
+          .upsert({ user_id: u.id, name: u.user_metadata?.name || u.email, status: body.set_vendor_status.status });
+        out.set_vendor_status = error ? ("err:" + error.message) : { user_id: u.id, status: body.set_vendor_status.status };
+      }
+    }
+
     // 4) 依 email 查使用者
     async function findUser(email: string) {
       const { data } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
