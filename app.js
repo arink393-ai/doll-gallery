@@ -24,6 +24,35 @@ let PRODUCTS = [];    // 從資料庫載入的商品（已正規化）
 const ADMIN_ID = '99482e09-0df0-47bf-9e87-49e54ba94fed';  // 管理員帳號（棉花娃娃工坊）
 function isAdmin() { return SESSION?.user?.id === ADMIN_ID; }
 
+/* 進駐模式：開放制 / 審核制 */
+let SETTINGS = { require_vendor_approval: false };
+let MY_VENDOR = null;   // 目前登入者的賣家狀態 {status} 或 null
+async function loadSettings() {
+  const { data } = await sb.from('doll_settings').select('require_vendor_approval').eq('id', 'platform').maybeSingle();
+  if (data) SETTINGS = { require_vendor_approval: !!data.require_vendor_approval };
+}
+async function loadMyVendor() {
+  if (!SESSION?.user) { MY_VENDOR = null; return; }
+  const { data } = await sb.from('doll_vendors').select('status').eq('user_id', SESSION.user.id).maybeSingle();
+  MY_VENDOR = data || null;
+}
+function canSell() {
+  return !SETTINGS.require_vendor_approval || isAdmin() || MY_VENDOR?.status === 'approved';
+}
+// 檢查是否可上架；不行就走申請流程
+async function ensureCanSell(action) {
+  if (canSell()) { action(); return; }
+  if (MY_VENDOR?.status === 'pending') { toast('你的賣家申請審核中，通過後即可上架'); return; }
+  if (MY_VENDOR?.status === 'rejected') { toast('你的賣家申請未通過，請聯繫管理員'); return; }
+  if (window.confirm('本站目前採「審核進駐」：需先成為核准賣家才能上架。要送出賣家申請嗎？')) {
+    const u = SESSION.user;
+    const { error } = await sb.from('doll_vendors').insert({ user_id: u.id, name: userName(u), status: 'pending' });
+    if (error) { toast('申請失敗：' + error.message); return; }
+    MY_VENDOR = { status: 'pending' };
+    toast('已送出賣家申請，待管理員核准');
+  }
+}
+
 /* ---------- 小工具 ---------- */
 const $ = (s, r=document) => r.querySelector(s);
 const $$ = (s, r=document) => [...r.querySelectorAll(s)];
@@ -210,7 +239,7 @@ function requireLogin(action) {
 let uploadedFile = null;   // 實際 File 物件（上傳 Storage 用）
 let editingId = null;      // 非 null = 編輯既有商品
 function openSell() {
-  requireLogin(() => {
+  requireLogin(() => ensureCanSell(() => {
     editingId = null; uploadedFile = null;
     $('#sellTitle').textContent = '刊登商品';
     $('#sellSubmit').textContent = '確認刊登（免費）';
@@ -219,7 +248,7 @@ function openSell() {
     $('#sellErr').textContent='';
     updateSellFeeHint();
     openModal('sellModal');
-  });
+  }));
 }
 function openEditProduct(id) {
   const p = PRODUCTS.find(x => x.id === id); if (!p) return;
@@ -446,6 +475,32 @@ async function renderAdmin() {
     return;
   }
 
+  if (adminTab === 'vendors') {
+    await loadSettings();
+    const mode = SETTINGS.require_vendor_approval;
+    const { data, error } = await sb.from('doll_vendors').select('*').order('applied_at', { ascending: true });
+    const vendorsHtml = error ? `<div class="acct-empty">讀取失敗：${escapeHtml(error.message)}</div>`
+      : (!data.length ? '<div class="acct-empty">目前沒有賣家申請。</div>'
+        : `<div class="acct-list">${data.map(v => {
+            const pill = { pending: '<span class="pill pending">待審核</span>', approved: '<span class="pill paid">已核准</span>', rejected: '<span class="pill failed">已拒絕</span>' }[v.status] || '';
+            const acts = v.status === 'approved'
+              ? `<button class="mini-btn" data-vset="${v.user_id}" data-s="rejected">取消核准</button>`
+              : `<button class="mini-btn" data-vset="${v.user_id}" data-s="approved">核准</button><button class="mini-btn danger" data-vset="${v.user_id}" data-s="rejected">拒絕</button>`;
+            return `<div class="acct-row"><div class="thumb">🧵</div>
+              <div class="info"><h4>${escapeHtml(v.name || '賣家')}</h4><div class="sub">${pill} · 申請於 ${new Date(v.applied_at).toLocaleDateString('zh-TW')}</div></div>
+              <div class="acts">${acts}</div></div>`;
+          }).join('')}</div>`);
+    body.innerHTML = `
+      <div class="acct-row" style="margin-bottom:14px">
+        <div class="info"><h4>進駐模式</h4><div class="sub">${mode ? '目前：<b>審核進駐</b>（會員需申請、經你核准才能上架）' : '目前：<b>開放進駐</b>（任何會員即可上架）'}</div></div>
+        <div class="acts"><button class="mini-btn" id="vmodeToggle">${mode ? '改為開放制' : '改為審核制'}</button></div>
+      </div>
+      ${vendorsHtml}`;
+    $('#vmodeToggle').onclick = () => setVendorMode(!mode);
+    body.querySelectorAll('[data-vset]').forEach(b => b.onclick = () => setVendorStatus(b.dataset.vset, b.dataset.s));
+    return;
+  }
+
   // orders（需要已跑 admin-rls SQL 才讀得到全部）
   const { data, error } = await sb.from('doll_orders').select('*').order('created_at', { ascending: false });
   if (error) { body.innerHTML = `<div class="acct-empty">讀取失敗：${escapeHtml(error.message)}</div>`; return; }
@@ -460,6 +515,17 @@ async function renderAdmin() {
     </div>`).join('')}</div>`;
 }
 
+async function setVendorMode(on) {
+  const { error } = await sb.from('doll_settings').update({ require_vendor_approval: on }).eq('id', 'platform');
+  if (error) { toast('設定失敗：' + error.message); return; }
+  SETTINGS.require_vendor_approval = on;
+  renderAdmin(); toast(on ? '已改為審核進駐' : '已改為開放進駐');
+}
+async function setVendorStatus(userId, status) {
+  const { error } = await sb.from('doll_vendors').update({ status }).eq('user_id', userId);
+  if (error) { toast('操作失敗：' + error.message); return; }
+  renderAdmin(); toast(status === 'approved' ? '已核准賣家' : '已更新狀態');
+}
 async function adminToggleCampaign(id, cur) {
   const { error } = await sb.from('doll_campaigns').update({ active: !cur }).eq('id', id);
   if (error) { toast('操作失敗：' + error.message); return; }
@@ -529,13 +595,13 @@ function renderCampaigns() {
 /* 發起募資 */
 let cImage = null;
 function openCampaign() {
-  requireLogin(() => {
+  requireLogin(() => ensureCanSell(() => {
     cImage = null;
     $('#cTitle').value = ''; $('#cPrice').value = ''; $('#cGoal').value = ''; $('#cDesc').value = '';
     $('#cDeadline').value = new Date(Date.now() + 30 * DAY_MS).toISOString().slice(0, 10);
     $('#cPreview').innerHTML = ''; $('#cDrop').classList.remove('has'); $('#campErr').textContent = '';
     openModal('campModal');
-  });
+  }));
 }
 $('#cfStart').onclick = openCampaign;
 $('#cDrop').onclick = () => $('#cFile').click();
@@ -739,12 +805,14 @@ $('#feeCommTxt').textContent = `售價 × ${(FEES.commissionRate*100)}%`;
 $('#feePayTxt').textContent = `售價 × ${(FEES.paymentRate*100)}% ＋ NT$${FEES.paymentFixed}`;
 
 /* ---------- 登入狀態變化時同步 UI ---------- */
-sb.auth.onAuthStateChange((_e, session) => { SESSION = session; renderAccount(); });
+sb.auth.onAuthStateChange(async (_e, session) => { SESSION = session; await loadMyVendor(); renderAccount(); });
 
 /* ---------- 啟動 ---------- */
 (async function init() {
   renderCalc();
+  await loadSettings();
   await refreshSession();
+  await loadMyVendor();
   renderAccount();
   await loadProducts();
   renderZones();
