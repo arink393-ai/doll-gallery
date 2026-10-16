@@ -69,6 +69,19 @@ Deno.serve(async (req) => {
       out.user = u ? { id: u.id, email: u.email, name: u.user_metadata?.name } : null;
     }
 
+    // 4b) 改某帳號的顯示名稱（user_metadata.name），並同步其募資/商品顯示名
+    if (body.set_display_name) {
+      const { email, name } = body.set_display_name;
+      const u = await findUser(email);
+      if (!u) { out.set_display_name = "user_not_found"; }
+      else {
+        await admin.auth.admin.updateUserById(u.id, { user_metadata: { ...(u.user_metadata || {}), name } });
+        await admin.from("doll_campaigns").update({ creator_name: name }).eq("creator_id", u.id);
+        await admin.from("doll_products").update({ seller_name: name }).eq("seller_id", u.id);
+        out.set_display_name = { user_id: u.id, name };
+      }
+    }
+
     // 5) 把所有募資專案（可含商品）指派給某 email 的帳號當團主/賣家
     if (body.assign_owner) {
       const email = body.assign_owner.email;

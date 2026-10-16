@@ -21,6 +21,8 @@ const sb = window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_KEY);
 /* ---------- 執行期狀態 ---------- */
 let SESSION = null;   // 目前登入 session
 let PRODUCTS = [];    // 從資料庫載入的商品（已正規化）
+const ADMIN_ID = '99482e09-0df0-47bf-9e87-49e54ba94fed';  // 管理員帳號（棉花娃娃工坊）
+function isAdmin() { return SESSION?.user?.id === ADMIN_ID; }
 
 /* ---------- 小工具 ---------- */
 const $ = (s, r=document) => r.querySelector(s);
@@ -96,10 +98,13 @@ async function doLogout() { await sb.auth.signOut(); SESSION = null; }
 function renderAccount() {
   const el = $('#navAccount'); const u = SESSION?.user;
   if (u) {
+    const adminBtn = isAdmin() ? '<button class="link-btn" id="accAdmin" style="color:var(--barbie)">管理</button>' : '';
     el.innerHTML = `<span class="who">👤 ${escapeHtml(userName(u))}</span>
+      ${adminBtn}
       <button class="link-btn" id="accMine">我的</button>
       <button class="btn btn-dark btn-sm" id="accSell">刊登</button>
       <button class="link-btn" id="accLogout">登出</button>`;
+    if (isAdmin()) $('#accAdmin').onclick = openAdmin;
     $('#accMine').onclick = openAccount;
     $('#accSell').onclick = openSell;
     $('#accLogout').onclick = async () => { await doLogout(); renderAccount(); toast('已登出'); };
@@ -372,6 +377,110 @@ async function checkPaidReturn() {
   else toast('已從綠界返回');
   // 可能是募資贊助 → 重新載入進度
   await loadCampaigns(); renderCampaigns();
+}
+
+/* ---------- 管理後台（限管理員） ---------- */
+let adminTab = 'campaigns';
+function openAdmin() {
+  if (!isAdmin()) { toast('僅限管理員'); return; }
+  adminTab = 'campaigns';
+  $$('#adminTabs .tab').forEach(t => t.classList.toggle('active', t.dataset.atab === adminTab));
+  $('#adminBody').innerHTML = '<div class="acct-empty">載入中…</div>';
+  openModal('adminModal');
+  renderAdmin();
+}
+$('#adminTabs').addEventListener('click', e => {
+  const t = e.target.closest('.tab'); if (!t) return;
+  adminTab = t.dataset.atab;
+  $$('#adminTabs .tab').forEach(x => x.classList.toggle('active', x === t));
+  renderAdmin();
+});
+
+async function renderAdmin() {
+  const body = $('#adminBody');
+  body.innerHTML = '<div class="acct-empty">載入中…</div>';
+
+  if (adminTab === 'campaigns') {
+    const { data, error } = await sb.from('doll_campaigns').select('*').order('created_at', { ascending: false });
+    if (error) { body.innerHTML = `<div class="acct-empty">讀取失敗：${escapeHtml(error.message)}</div>`; return; }
+    if (!data.length) { body.innerHTML = '<div class="acct-empty">目前沒有募資專案。</div>'; return; }
+    body.innerHTML = `<div class="acct-list">${data.map(c => {
+      const pct = Math.min(100, Math.round(c.pledged_qty / c.goal_qty * 100));
+      const thumb = c.image_url ? `style="background-image:url('${escapeHtml(c.image_url)}');background-size:cover"` : '';
+      return `<div class="acct-row">
+        <div class="thumb" ${thumb}>${c.image_url ? '' : '🧸'}</div>
+        <div class="info"><h4>${escapeHtml(c.title)}</h4>
+          <div class="sub">團主 ${escapeHtml(c.creator_name)} · ${money(c.unit_price)}/隻 · 已預訂 ${c.pledged_qty}/${c.goal_qty}（${pct}%） · ${c.active ? '<span class="pill on">進行中</span>' : '<span class="pill off">已關閉</span>'}</div>
+        </div>
+        <div class="acts">
+          <button class="mini-btn" data-ctoggle="${c.id}" data-cur="${c.active}">${c.active ? '關閉' : '重開'}</button>
+          <button class="mini-btn danger" data-cdel="${c.id}">刪除</button>
+        </div>
+      </div>`;
+    }).join('')}</div>`;
+    body.querySelectorAll('[data-ctoggle]').forEach(b => b.onclick = () => adminToggleCampaign(b.dataset.ctoggle, b.dataset.cur === 'true'));
+    body.querySelectorAll('[data-cdel]').forEach(b => b.onclick = () => adminDeleteCampaign(b.dataset.cdel));
+    return;
+  }
+
+  if (adminTab === 'products') {
+    const { data, error } = await sb.from(CFG.TABLE).select('*').order('created_at', { ascending: false });
+    if (error) { body.innerHTML = `<div class="acct-empty">讀取失敗：${escapeHtml(error.message)}</div>`; return; }
+    if (!data.length) { body.innerHTML = '<div class="acct-empty">目前沒有商品。</div>'; return; }
+    body.innerHTML = `<div class="acct-list">${data.map(r => {
+      const p = normalize(r);
+      const thumb = p.image ? `style="background-image:url('${escapeHtml(p.image)}');background-size:cover"` : '';
+      return `<div class="acct-row">
+        <div class="thumb" ${thumb}>${p.image ? '' : p.emoji}</div>
+        <div class="info"><h4>${escapeHtml(p.title)}</h4>
+          <div class="sub">賣家 ${escapeHtml(p.sellerName || '—')} · ${escapeHtml(CAT_NAME[p.cat])} · ${money(p.price)} · ${r.for_sale ? '<span class="pill on">販售中</span>' : '<span class="pill off">已下架</span>'}</div>
+        </div>
+        <div class="acts">
+          <button class="mini-btn" data-ptoggle="${p.id}" data-cur="${r.for_sale}">${r.for_sale ? '下架' : '上架'}</button>
+          <button class="mini-btn danger" data-pdel="${p.id}">刪除</button>
+        </div>
+      </div>`;
+    }).join('')}</div>`;
+    body.querySelectorAll('[data-ptoggle]').forEach(b => b.onclick = () => adminToggleProduct(b.dataset.ptoggle, b.dataset.cur === 'true'));
+    body.querySelectorAll('[data-pdel]').forEach(b => b.onclick = () => adminDeleteProduct(b.dataset.pdel));
+    return;
+  }
+
+  // orders（需要已跑 admin-rls SQL 才讀得到全部）
+  const { data, error } = await sb.from('doll_orders').select('*').order('created_at', { ascending: false });
+  if (error) { body.innerHTML = `<div class="acct-empty">讀取失敗：${escapeHtml(error.message)}</div>`; return; }
+  if (!data.length) { body.innerHTML = '<div class="acct-empty">目前沒有訂單。<br><span style="font-size:.8rem">（若剛開通管理員權限，請確認已跑 admin-rls SQL）</span></div>'; return; }
+  body.innerHTML = `<div class="acct-list">${data.map(o => `
+    <div class="acct-row">
+      <div class="thumb">${o.campaign_id ? '🧸' : '🛍️'}</div>
+      <div class="info"><h4>${escapeHtml(o.product_title)}</h4>
+        <div class="sub">買家 ${escapeHtml(o.buyer_email || '—')} → 賣家 ${escapeHtml(o.seller_name || '—')} · ${money(o.amount)}（實收 ${money(o.seller_payout)}） · ${orderDate(o)}</div>
+      </div>
+      <div class="acts">${statusPill(o.status)}</div>
+    </div>`).join('')}</div>`;
+}
+
+async function adminToggleCampaign(id, cur) {
+  const { error } = await sb.from('doll_campaigns').update({ active: !cur }).eq('id', id);
+  if (error) { toast('操作失敗：' + error.message); return; }
+  await loadCampaigns(); renderCampaigns(); renderAdmin(); toast(cur ? '已關閉募資' : '已重新開放');
+}
+async function adminDeleteCampaign(id) {
+  if (!window.confirm('確定刪除這個募資專案嗎？此動作無法復原。')) return;
+  const { error } = await sb.from('doll_campaigns').delete().eq('id', id);
+  if (error) { toast('刪除失敗：' + error.message); return; }
+  await loadCampaigns(); renderCampaigns(); renderAdmin(); toast('已刪除募資');
+}
+async function adminToggleProduct(id, cur) {
+  const { error } = await sb.from(CFG.TABLE).update({ for_sale: !cur }).eq('id', id);
+  if (error) { toast('操作失敗：' + error.message); return; }
+  await loadProducts(); renderZones(); renderMarket(); renderAdmin(); toast(cur ? '已下架' : '已上架');
+}
+async function adminDeleteProduct(id) {
+  if (!window.confirm('確定刪除這件商品嗎？此動作無法復原。')) return;
+  const { error } = await sb.from(CFG.TABLE).delete().eq('id', id);
+  if (error) { toast('刪除失敗：' + error.message); return; }
+  await loadProducts(); renderZones(); renderMarket(); renderAdmin(); toast('已刪除商品');
 }
 
 /* ---------- 棉花娃娃募資 Crowdfunding ---------- */
