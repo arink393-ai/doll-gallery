@@ -5,3 +5,6 @@ verify_jwt = true
 
 [functions.ecpay-notify]
 verify_jwt = false
+
+[functions.admin-seed]
+verify_jwt = false

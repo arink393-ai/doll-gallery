@@ -10,15 +10,16 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#fdf7f4;--ink:#3a2c2c;--muted:#8a7570;--line:#eaddd7;--card:#ffffff;
-    --barbie:#e0489a;--barbie-soft:#fce4f1;
-    --blythe:#6c8ec4;--blythe-soft:#e6eef8;
-    --bjd:#8a6bbf;--bjd-soft:#efe8fa;
-    --gold:#c9a24b;--green:#2f9e6f;
-    --shadow:0 10px 30px rgba(120,80,80,.10);--radius:18px;
+    --bg:#f6f2ec;--ink:#2a2521;--muted:#978d80;--line:#e8e1d6;--card:#ffffff;
+    --barbie:#b56b83;--barbie-soft:#f2e8ea;
+    --blythe:#6f88a4;--blythe-soft:#e7ecf1;
+    --bjd:#897aa6;--bjd-soft:#ece8f0;
+    --gold:#b1915f;--green:#4a8f73;
+    --shadow:0 14px 40px rgba(60,45,40,.07);--radius:16px;
     --serif:"Noto Serif TC",serif;
     --sans:"Noto Sans TC",system-ui,-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif;
   }
+  ::selection{background:#e7d6c6;color:var(--ink)}
   *{box-sizing:border-box}
   html{scroll-behavior:smooth}
   body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--bg);line-height:1.7;-webkit-font-smoothing:antialiased}
@@ -42,9 +43,9 @@
 
   /* Buttons */
   .btn{display:inline-flex;align-items:center;gap:.5rem;padding:11px 22px;border-radius:999px;font-weight:700;font-size:.92rem;transition:transform .18s,box-shadow .18s;border:0;cursor:pointer}
-  .btn-pink{background:var(--barbie);color:#fff;box-shadow:0 8px 20px rgba(224,72,154,.32)}
-  .btn-blue{background:var(--blythe);color:#fff;box-shadow:0 8px 20px rgba(108,142,196,.32)}
-  .btn-bjd{background:var(--bjd);color:#fff;box-shadow:0 8px 20px rgba(138,107,191,.32)}
+  .btn-pink{background:var(--barbie);color:#fff;box-shadow:0 8px 22px rgba(181,107,131,.26)}
+  .btn-blue{background:var(--blythe);color:#fff;box-shadow:0 8px 22px rgba(111,136,164,.26)}
+  .btn-bjd{background:var(--bjd);color:#fff;box-shadow:0 8px 22px rgba(137,122,166,.26)}
   .btn-dark{background:var(--ink);color:#fff}
   .btn-ghost{background:#fff;color:var(--ink);border:1px solid var(--line)}
   .btn-green{background:var(--green);color:#fff}
@@ -52,9 +53,9 @@
   .btn-sm{padding:8px 16px;font-size:.85rem}
 
   /* Hero */
-  .hero{padding:80px 0 60px;text-align:center;background:radial-gradient(1200px 500px at 50% -10%,#fbe9f3 0%,transparent 60%)}
-  .hero .eyebrow{color:var(--gold);font-weight:700;letter-spacing:.28em;font-size:.8rem;text-transform:uppercase}
-  .hero h1{font-family:var(--serif);font-size:clamp(2.1rem,6vw,3.5rem);line-height:1.2;margin:.5rem 0 .4rem}
+  .hero{padding:90px 0 66px;text-align:center;background:radial-gradient(1100px 520px at 50% -12%,#ebe0e0 0%,transparent 62%)}
+  .hero .eyebrow{color:var(--gold);font-weight:700;letter-spacing:.34em;font-size:.76rem;text-transform:uppercase}
+  .hero h1{font-family:var(--serif);font-size:clamp(2.1rem,6vw,3.6rem);line-height:1.22;margin:.5rem 0 .4rem;letter-spacing:.01em}
   .hero p{max-width:600px;margin:0 auto;color:var(--muted);font-size:1.05rem}
   .hero-cta{margin-top:26px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
   .hero-note{margin-top:16px;font-size:.85rem;color:var(--muted)}
@@ -74,9 +75,9 @@
   /* Zone map */
   .map-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
   .map-card{border-radius:var(--radius);padding:28px;color:#fff;position:relative;overflow:hidden;min-height:172px;display:flex;flex-direction:column;justify-content:flex-end;box-shadow:var(--shadow)}
-  .map-card.pink{background:linear-gradient(135deg,#f06db0,#d63c8e)}
-  .map-card.blue{background:linear-gradient(135deg,#8aa9d6,#5a79b3)}
-  .map-card.bjd{background:linear-gradient(135deg,#a487d6,#7357a8)}
+  .map-card.pink{background:linear-gradient(140deg,#bf8092,#a4607a)}
+  .map-card.blue{background:linear-gradient(140deg,#8ba0b6,#607c98)}
+  .map-card.bjd{background:linear-gradient(140deg,#9f90b8,#796a9a)}
   .map-card .k{font-size:2.3rem;line-height:1;margin-bottom:auto}
   .map-card h3{font-family:var(--serif);font-size:1.4rem;margin:12px 0 4px}
   .map-card p{margin:0;opacity:.92;font-size:.9rem}
@@ -87,9 +88,9 @@
   .doll{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);transition:transform .2s,box-shadow .2s;display:flex;flex-direction:column}
   .doll:hover{transform:translateY(-4px);box-shadow:0 16px 36px rgba(120,80,80,.16)}
   .doll .photo{height:220px;display:flex;align-items:center;justify-content:center;font-size:4rem;position:relative;background-size:cover;background-position:center}
-  .doll.pink .photo{background:linear-gradient(160deg,#fce4f1,#f7c7e0)}
-  .doll.blue .photo{background:linear-gradient(160deg,#e6eef8,#cfdcf1)}
-  .doll.bjd .photo{background:linear-gradient(160deg,#efe8fa,#dccef2)}
+  .doll.pink .photo{background:linear-gradient(160deg,#f3e9eb,#e9d6dc)}
+  .doll.blue .photo{background:linear-gradient(160deg,#eaeef3,#d7e0ea)}
+  .doll.bjd .photo{background:linear-gradient(160deg,#ece7f0,#ddd5e6)}
   .doll .tag{position:absolute;top:12px;left:12px;background:rgba(255,255,255,.88);color:var(--ink);font-size:.72rem;font-weight:700;padding:4px 10px;border-radius:999px}
   .doll .price-tag{position:absolute;top:12px;right:12px;background:var(--ink);color:#fff;font-size:.8rem;font-weight:700;padding:4px 10px;border-radius:999px}
   .doll .body{padding:16px 18px 20px;display:flex;flex-direction:column;flex:1}
@@ -190,18 +191,18 @@
   .camp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
   .camp{background:#fff;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column;transition:transform .2s,box-shadow .2s}
   .camp:hover{transform:translateY(-4px);box-shadow:0 16px 36px rgba(120,80,80,.16)}
-  .camp .photo{height:180px;display:flex;align-items:center;justify-content:center;font-size:3.6rem;background:linear-gradient(160deg,#ffe3ef,#ffc9e0);background-size:cover;background-position:center;position:relative}
+  .camp .photo{height:200px;display:flex;align-items:center;justify-content:center;font-size:3.6rem;background:linear-gradient(160deg,#f3e9eb,#ecd9df);background-size:cover;background-position:center;position:relative}
   .camp .deadline{position:absolute;top:12px;right:12px;background:rgba(255,255,255,.9);color:var(--ink);font-size:.74rem;font-weight:700;padding:4px 10px;border-radius:999px}
   .camp .body{padding:16px 18px 20px;display:flex;flex-direction:column;flex:1}
   .camp h4{margin:0 0 4px;font-family:var(--serif);font-size:1.12rem}
-  .camp .price{color:#d63c8e;font-weight:700;font-size:1.05rem}
+  .camp .price{color:var(--barbie);font-weight:700;font-size:1.05rem}
   .camp .price span{color:var(--muted);font-weight:500;font-size:.82rem}
   .camp .desc{font-size:.86rem;color:#5c4a4a;margin:8px 0 2px;flex:1}
-  .progress{height:10px;background:#f0e4ea;border-radius:999px;overflow:hidden;margin:12px 0 6px}
-  .progress .bar{height:100%;background:linear-gradient(90deg,#f589b8,#d63c8e);border-radius:999px;transition:width .4s}
+  .progress{height:9px;background:#ece4e2;border-radius:999px;overflow:hidden;margin:12px 0 6px}
+  .progress .bar{height:100%;background:linear-gradient(90deg,#c98ba0,#b06a84);border-radius:999px;transition:width .4s}
   .camp .prog-txt{display:flex;justify-content:space-between;font-size:.85rem;color:var(--muted);margin-bottom:12px}
   .camp .prog-txt b{color:var(--ink)}
-  .camp .pct{color:#d63c8e;font-weight:700}
+  .camp .pct{color:var(--barbie);font-weight:700}
   .camp .done{color:var(--green);font-weight:700}
   .camp .ended{color:var(--muted);font-weight:700}
   .qty-row{display:flex;align-items:center;gap:10px;margin:6px 0}
@@ -272,7 +273,7 @@
 </section>
 
 <!-- 芭比 -->
-<section class="zone" id="barbie" style="background:linear-gradient(180deg,#fff6fb,transparent)">
+<section class="zone" id="barbie" style="background:linear-gradient(180deg,#faf3f4,transparent)">
   <div class="wrap">
     <div class="zone-head">
       <div><h2 class="zone-title">芭比娃娃專區 <span class="badge badge-pink">BARBIE</span></h2>
@@ -283,7 +284,7 @@
 </section>
 
 <!-- 小布 -->
-<section class="zone" id="blythe" style="background:linear-gradient(180deg,#f4f8ff,transparent)">
+<section class="zone" id="blythe" style="background:linear-gradient(180deg,#f3f6f9,transparent)">
   <div class="wrap">
     <div class="zone-head">
       <div><h2 class="zone-title">小布娃娃專區 <span class="badge badge-blue">BLYTHE</span></h2>
@@ -294,7 +295,7 @@
 </section>
 
 <!-- BJD -->
-<section class="zone" id="bjd" style="background:linear-gradient(180deg,#f6f2fd,transparent)">
+<section class="zone" id="bjd" style="background:linear-gradient(180deg,#f5f2f8,transparent)">
   <div class="wrap">
     <div class="zone-head">
       <div><h2 class="zone-title">BJD 專區 <span class="badge badge-bjd">BALL-JOINTED DOLL</span></h2>
@@ -325,7 +326,7 @@
 </section>
 
 <!-- 棉花娃娃募資 CROWDFUNDING -->
-<section class="zone" id="crowdfund" style="background:linear-gradient(180deg,#fff4f9,transparent);border-top:1px solid var(--line)">
+<section class="zone" id="crowdfund" style="background:linear-gradient(180deg,#f9f3f4,transparent);border-top:1px solid var(--line)">
   <div class="wrap">
     <div class="zone-head">
       <div>
